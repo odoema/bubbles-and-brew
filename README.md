@@ -1,27 +1,22 @@
 # Bubbles & Brew
 
-Official website for **Bubbles & Brew** — a professional car wash and vehicle-care business with coffee, food and beauty services on Jinja Road, Naguru, Kampala, Uganda.
+**Slogan:** Wash, Warm and Roll.
 
-**Brand slogan:** Wash, Warm and Roll.
-**Planned opening:** 1 January 2027.
+A mobile-responsive website for Bubbles & Brew, a planned professional car wash and vehicle-care business on Jinja Road, Naguru, Kampala, Uganda. The café and beauty services are complementary to the core car-wash business.
+
+**Planned opening:** 1 January 2027  
 **Custom domain:** https://bubblesandbrew.online
 
-## Website
+## Current status
 
-Responsive single-page HTML/CSS/JavaScript website. This prototype includes demo car-wash booking, café menu, subscription plan display, browser-local loyalty points and a staff/supervisor demo view. Booking, mobile-money payments and staff data are simulations; they do not contact a payment provider or send messages, and the demo is not a secure production operations system.
+The repository contains an HTML/CSS/JavaScript website preview. The interest form only displays a local confirmation; it does not submit to a backend, send email or store customer records. Online booking, payments, customer notifications, staff logins, and central loyalty records are not yet implemented. Do not use the preview as an operational booking or payment system.
 
-## Files
+## GitHub Pages
 
-- `index.html` — website
-- `logo.png` — brand logo
-- `icon.png` — browser/app icon
-- `hero.jpg`, `img0.jpg`–`img3.jpg` — website imagery
-- `CNAME` — GitHub Pages custom domain
+In **Settings → Pages**, select **Deploy from a branch**, choose `main` and `/ (root)`, then save. Set the custom domain to `bubblesandbrew.online`, check the DNS at your registrar and enable HTTPS when GitHub reports that it is available.
 
-## Publish with GitHub Pages
+The root `CNAME` file is included for the custom domain. DNS changes can take time to propagate. GitHub Pages setup and DNS must both be complete before claiming the custom site is live.
 
-In repository Settings → Pages, choose **Deploy from a branch**, branch `main`, folder `/ (root)`, and save. Then set the custom domain to `bubblesandbrew.online`. Check DNS at the domain registrar and wait for GitHub's domain check before enabling HTTPS.
+## Production roadmap
 
-## Production readiness
-
-Before treating this as the operational system, connect booking, payment, customer notifications and staff access to a secure backend. Do not treat locally stored browser data as a central booking register or use the demo staff screen for real customer records.
+Before launch, upload final brand assets, connect bookings to a secure backend, implement verified staff authentication and role permissions, integrate the selected payment provider, configure transactional messages, and test the full customer-to-vehicle-handover flow.
