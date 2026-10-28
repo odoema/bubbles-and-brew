@@ -6,7 +6,7 @@ Bubbles & Brew is being developed as a **car-wash-first digital business platfor
 
 ## Current release
 
-The customer frontend has been upgraded from a single-page preview into a structured, mobile-first PWA foundation:
+The customer frontend is a structured, mobile-first PWA foundation:
 
 - Car-wash-first brand experience
 - Responsive service catalogue
@@ -20,37 +20,54 @@ The customer frontend has been upgraded from a single-page preview into a struct
 
 The visual system is designed to accept the supplied vehicle-care photography and other final production assets without changing the application structure.
 
-### Important
+### Backend status
 
-The booking flow is **still preview mode**. It stores test bookings in the customer's browser only. No customer information is currently sent to a live backend.
+The live customer booking flow is **still preview mode**. Test bookings are stored in the customer's browser only. No customer information is currently sent to a production backend.
 
-A real backend has deliberately **not** been connected yet because no verified Bubbles & Brew Supabase project has been provided/configured. Do not connect this project to an unrelated Supabase project.
+A dedicated Firebase project has now been created:
+
+- **Firebase project:** `bubbles-and-brew`
+- **Plan:** Spark during the initial build
+- **Backend direction:** Firebase Authentication + Cloud Firestore + Cloud Functions when server-side functions are required + Storage/FCM as later phases require
+
+The repository now contains the first Firebase foundation files:
+
+- `.firebaserc`
+- `firebase.json`
+- `firestore.rules`
+- `firestore.indexes.json`
+- `js/firebase-config.js`
+- `js/firebase-init.js`
+
+The Firestore rules are intentionally locked down until each collection has an explicit, tested authorization policy.
 
 ## Target production architecture
 
 ```text
 Customer PWA
     ↓ HTTPS
-Supabase
-    ├── PostgreSQL
-    ├── Auth
-    ├── RLS
-    ├── Storage
-    ├── Edge Functions
-    └── Realtime
+Firebase
+    ├── Authentication
+    ├── Cloud Firestore
+    ├── Security Rules
+    ├── Cloud Functions
+    ├── Cloud Storage
+    ├── Cloud Messaging
+    └── Analytics
           ↓
 Bookings · Wash Queue · Bays · Staff · Vehicles
 Memberships · Loyalty · Payments · Receipts · Fleet
 ```
 
-See [`docs/TECHNICAL-ASSESSMENT.md`](docs/TECHNICAL-ASSESSMENT.md).
+See [`docs/TECHNICAL-ASSESSMENT.md`](docs/TECHNICAL-ASSESSMENT.md) and [`docs/FIREBASE-IMPLEMENTATION.md`](docs/FIREBASE-IMPLEMENTATION.md).
 
 ## Deployment
 
 - Frontend: GitHub Pages
 - Domain: `bubblesandbrew.online`
 - Source branch: `main`
-- Backend: Supabase, to be connected after project verification
+- Firebase project: `bubbles-and-brew`
+- GitHub Pages remains the customer-facing deployment; Firebase is being introduced as the backend platform.
 
 Only one static Pages workflow should be used for this project.
 
