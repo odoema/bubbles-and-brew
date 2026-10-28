@@ -19,6 +19,12 @@
     el.classList.toggle('error', !good);
   };
 
+  function chooseService(name) {
+    const select = $('#bService');
+    const option = Array.from(select.options).find(o => (o.dataset.name || o.value) === name || o.textContent.split(' — ')[0] === name);
+    if (option) select.value = option.value;
+  }
+
   async function loadBackendCatalogue() {
     if (!backendReady) return;
     try {
@@ -75,8 +81,8 @@
   $('#themeBtn').addEventListener('click',()=>{document.body.classList.toggle('dark');localStorage.setItem('bb-theme',document.body.classList.contains('dark')?'dark':'light')});
   if(localStorage.getItem('bb-theme')==='dark') document.body.classList.add('dark');
   $('#menuBtn').addEventListener('click',()=>{const n=$('#mainNav');n.style.display=n.style.display==='flex'?'none':'flex';n.style.position='absolute';n.style.top='70px';n.style.left='15px';n.style.right='15px';n.style.background='#082b36';n.style.padding='10px';n.style.borderRadius='14px';n.style.flexDirection='column'});
-  document.querySelectorAll('[data-book]').forEach(b=>b.addEventListener('click',()=>{ $('#bService').value=b.dataset.book; $('#book').scrollIntoView({behavior:'smooth'}); }));
-  document.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{ $('#bService').value='Full Wash'; $('#book').scrollIntoView({behavior:'smooth'}); $('#bName').focus(); }));
+  document.querySelectorAll('[data-book]').forEach(b=>b.addEventListener('click',()=>{ chooseService(b.dataset.book); $('#book').scrollIntoView({behavior:'smooth'}); }));
+  document.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{ chooseService('Full Wash'); $('#book').scrollIntoView({behavior:'smooth'}); $('#bName').focus(); }));
 
   $('#bookingForm').addEventListener('submit', async e=>{
     e.preventDefault();
@@ -84,13 +90,13 @@
     submit.disabled = true;
     submit.textContent = 'Creating booking…';
 
-    const serviceName = $('#bService').selectedOptions[0]?.dataset?.name || $('#bService').value;
+    const serviceName = $('#bService').selectedOptions[0]?.dataset?.name || $('#bService').value.split(' — ')[0];
     const payload = {
       name: $('#bName').value.trim(),
       phone: $('#bPhone').value.trim(),
       vehicle: $('#bVehicle').value.trim(),
-      registration: $('#bVehicle').value.trim(),
-      vehicleType: 'other',
+      registration: $('#bRegistration').value.trim(),
+      vehicleType: $('#bVehicleType').value,
       service: serviceName,
       date: $('#bDate').value,
       time: $('#bTime').value,
@@ -100,13 +106,13 @@
     try {
       if (backendReady && services.length) {
         const result = await createBackendBooking(payload);
-        setBookingMessage(`Booking ${result.booking_number} received for ${payload.vehicle}. The team can now process it from the operations queue.`);
+        setBookingMessage(`Booking ${result.booking_number} received for ${payload.registration}. The team can now process it from the operations queue.`);
       } else {
-        const booking={id:'BB-'+String(Date.now()).slice(-6),name:payload.name,phone:payload.phone,vehicle:payload.vehicle,service:payload.service,date:payload.date,time:payload.time,status:'REQUESTED',createdAt:new Date().toISOString()};
+        const booking={id:'BB-'+String(Date.now()).slice(-6),name:payload.name,phone:payload.phone,vehicle:payload.vehicle,registration:payload.registration,vehicleType:payload.vehicleType,service:payload.service,date:payload.date,time:payload.time,status:'REQUESTED',createdAt:new Date().toISOString()};
         const list=JSON.parse(localStorage.getItem('bb-bookings')||'[]');
         list.unshift(booking);
         localStorage.setItem('bb-bookings',JSON.stringify(list));
-        setBookingMessage(`Preview booking ${booking.id} created for ${booking.vehicle}. It is stored on this device only.`);
+        setBookingMessage(`Preview booking ${booking.id} created for ${booking.registration}. It is stored on this device only.`);
       }
       e.target.reset();
       $('#bDate').min=date.toISOString().slice(0,10);
