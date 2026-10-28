@@ -1,22 +1,61 @@
 # Bubbles & Brew
 
-**Slogan:** Wash, Warm and Roll.
+**Wash, Warm and Roll.**
 
-A mobile-responsive website for Bubbles & Brew, a planned professional car wash and vehicle-care business on Jinja Road, Naguru, Kampala, Uganda. The café and beauty services are complementary to the core car-wash business.
+Bubbles & Brew is being developed as a **car-wash-first digital business platform** for the planned opening on **1 January 2027** at Jinja Road, Naguru, Kampala.
 
-**Planned opening:** 1 January 2027  
-**Custom domain:** https://bubblesandbrew.online
+## Current release
 
-## Current status
+The customer frontend has been upgraded from a single-page preview into a structured, mobile-first PWA foundation:
 
-The repository contains an HTML/CSS/JavaScript website preview. The interest form only displays a local confirmation; it does not submit to a backend, send email or store customer records. Online booking, payments, customer notifications, staff logins, and central loyalty records are not yet implemented. Do not use the preview as an operational booking or payment system.
+- Car-wash-first brand experience
+- Responsive service catalogue
+- Booking journey with booking reference
+- Membership plans
+- Operations dashboard preview
+- PWA manifest + service worker
+- Separated CSS and JavaScript
+- SVG brand assets
+- Technical architecture documentation
 
-## GitHub Pages
+The visual system is designed to accept the supplied vehicle-care photography and other final production assets without changing the application structure.
 
-In **Settings → Pages**, select **Deploy from a branch**, choose `main` and `/ (root)`, then save. Set the custom domain to `bubblesandbrew.online`, check the DNS at your registrar and enable HTTPS when GitHub reports that it is available.
+### Important
 
-The root `CNAME` file is included for the custom domain. DNS changes can take time to propagate. GitHub Pages setup and DNS must both be complete before claiming the custom site is live.
+The booking flow is **still preview mode**. It stores test bookings in the customer's browser only. No customer information is currently sent to a live backend.
 
-## Production roadmap
+A real backend has deliberately **not** been connected yet because no verified Bubbles & Brew Supabase project has been provided/configured. Do not connect this project to an unrelated Supabase project.
 
-Before launch, upload final brand assets, connect bookings to a secure backend, implement verified staff authentication and role permissions, integrate the selected payment provider, configure transactional messages, and test the full customer-to-vehicle-handover flow.
+## Target production architecture
+
+```text
+Customer PWA
+    ↓ HTTPS
+Supabase
+    ├── PostgreSQL
+    ├── Auth
+    ├── RLS
+    ├── Storage
+    ├── Edge Functions
+    └── Realtime
+          ↓
+Bookings · Wash Queue · Bays · Staff · Vehicles
+Memberships · Loyalty · Payments · Receipts · Fleet
+```
+
+See [`docs/TECHNICAL-ASSESSMENT.md`](docs/TECHNICAL-ASSESSMENT.md).
+
+## Deployment
+
+- Frontend: GitHub Pages
+- Domain: `bubblesandbrew.online`
+- Source branch: `main`
+- Backend: Supabase, to be connected after project verification
+
+Only one static Pages workflow should be used for this project.
+
+## Product principle
+
+**The car wash is the main business.** Coffee, food and beauty services are complementary parts of the customer experience.
+
+The production release should make the business operational, not merely attractive: customers should be able to book, staff should be able to manage the wash queue, and management should be able to see customers, vehicles, revenue and service performance.
