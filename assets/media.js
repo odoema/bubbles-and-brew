@@ -32,9 +32,8 @@ window.BB_MEDIA = {
       --shadow: 0 18px 55px rgba(6,59,77,.11);
     }
 
-    /* Clean white header: it intentionally matches the light logo background. */
     .topbar {
-      height: 100px;
+      height: 118px;
       background: #ffffff !important;
       color: var(--navy);
       border-bottom: 1px solid #dce8eb;
@@ -44,11 +43,12 @@ window.BB_MEDIA = {
     .topbar nav a { color: var(--navy) !important; }
     .topbar nav a:hover { background: rgba(7,155,183,.10); }
 
-    /* The official master logo is used everywhere; no cropped or alternate logo. */
+    /* Official master logo — 100% larger than the previous 260×90px size. */
     .brand-mark {
       content: url('${MASTER_LOGO}');
-      width: 260px;
-      height: 90px;
+      width: 520px;
+      height: 180px;
+      max-width: 45vw;
       display: block;
       object-fit: contain;
       object-position: center;
@@ -91,12 +91,12 @@ window.BB_MEDIA = {
     body.dark { --bg: #062631; --card: #0b3441; --ink: #eaf8fa; --muted: #a9c5cb; --line: #1c4b58; }
 
     @media (max-width: 850px) {
-      .topbar { height: 88px; }
-      .brand-mark { width: 225px; height: 80px; }
+      .topbar { height: 104px; }
+      .brand-mark { width: 450px; height: 160px; max-width: 55vw; }
     }
     @media (max-width: 520px) {
-      .topbar { height: 80px; }
-      .brand-mark { width: 195px; height: 70px; }
+      .topbar { height: 92px; }
+      .brand-mark { width: 390px; height: 140px; max-width: 72vw; }
     }
   `;
   document.head.appendChild(style);
