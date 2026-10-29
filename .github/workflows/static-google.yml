@@ -80,8 +80,19 @@ jobs:
           html = html.replace('Once the Bubbles & Brew Firebase project is connected, the same form will submit through a secure Cloud Function.', 'Once Google Workspace is connected, the same form writes to the Bubbles & Brew operations Google Sheet.')
 
           # The cinematic slider is the ONLY homepage hero presentation.
-          # Remove the legacy static hero contents so it can never compete with the slider.
-          html = re.sub(r'<section id="home" class="hero">.*?</section>', '<section id="home" class="hero"></section>', html, count=1, flags=re.S)
+          # Remove the entire legacy hero at build time using explicit boundaries.
+          start_marker = '<section id="home" class="hero">'
+          start = html.find(start_marker)
+          if start < 0:
+              raise SystemExit('Legacy homepage hero start marker not found.')
+          end_marker = '</section>'
+          end = html.find(end_marker, start)
+          if end < 0:
+              raise SystemExit('Legacy homepage hero end marker not found.')
+          end += len(end_marker)
+          html = html[:start] + '<section id="home" class="hero"></section>' + html[end:]
+          if '<img id="heroPhoto"' in html or '<div class="hero-logo">' in html:
+              raise SystemExit('Legacy homepage hero markup is still present after cleanup.')
 
           pattern = re.compile(r"document\.documentElement\.classList\.remove\('bb-loading'\);\s*document\.body\.classList\.remove\('bb-loading'\);", re.MULTILINE)
           replacement = """(function () {
