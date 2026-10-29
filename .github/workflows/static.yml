@@ -171,20 +171,12 @@ jobs:
           html = index.read_text(encoding="utf-8")
           marker = "</body>"
           bridge = r'''<script>
-          /*
-           * MVP booking bridge: live Firestore bookings are intentionally protected
-           * from anonymous reads. For the expo's same-device operations dashboard,
-           * mirror a successfully-created live booking into the local bb-bookings
-           * queue. This does not weaken Firestore rules or expose booking data.
-           */
           (function () {
             const form = document.getElementById('bookingForm');
             const result = document.getElementById('bookingResult');
             if (!form || !result) return;
-
             let submitted = null;
             let mirrored = '';
-
             form.addEventListener('submit', function () {
               submitted = {
                 name: document.getElementById('bName')?.value?.trim() || '',
@@ -197,61 +189,48 @@ jobs:
                 time: document.getElementById('bTime')?.value || ''
               };
             }, true);
-
             const observer = new MutationObserver(function () {
               const message = String(result.textContent || '');
               const match = message.match(/^Booking\s+(BB-[A-Z0-9-]+)\s+received\s+for\s+(.+)\.\s+The team can now process it from the live queue\./i);
               if (!match || !submitted || match[1] === mirrored) return;
-
               const bookingNumber = match[1];
               const priceText = document.getElementById('bService')?.selectedOptions?.[0]?.textContent || '';
               const priceMatch = priceText.match(/UGX\s*([0-9,]+)/i);
               const amount = priceMatch ? Number(priceMatch[1].replace(/,/g, '')) : 0;
               const now = new Date().toISOString();
-              const booking = {
-                id: bookingNumber,
-                bookingNumber,
-                name: submitted.name,
-                phone: submitted.phone,
-                vehicle: submitted.vehicle,
-                registration: submitted.registration,
-                vehicleType: submitted.vehicleType,
-                service: submitted.service || 'Full Wash',
-                date: submitted.date,
-                time: submitted.time,
-                status: 'requested',
-                paymentStatus: 'unpaid',
-                amount,
-                quotedAmountUgx: amount,
-                notes: '',
-                createdAt: now,
-                updatedAt: now,
-                source: 'live-firestore-mirror'
-              };
-
+              const booking = { id: bookingNumber, bookingNumber, name: submitted.name, phone: submitted.phone, vehicle: submitted.vehicle, registration: submitted.registration, vehicleType: submitted.vehicleType, service: submitted.service || 'Full Wash', date: submitted.date, time: submitted.time, status: 'requested', paymentStatus: 'unpaid', amount, quotedAmountUgx: amount, notes: '', createdAt: now, updatedAt: now, source: 'legacy-live-firestore-mirror' };
               try {
                 const list = JSON.parse(localStorage.getItem('bb-bookings') || '[]');
-                const withoutDuplicate = list.filter(function (item) {
-                  return item.bookingNumber !== bookingNumber && item.id !== bookingNumber;
-                });
-                withoutDuplicate.unshift(booking);
-                localStorage.setItem('bb-bookings', JSON.stringify(withoutDuplicate));
+                list.unshift(booking);
+                localStorage.setItem('bb-bookings', JSON.stringify(list));
                 mirrored = bookingNumber;
-              } catch (error) {
-                console.warn('Bubbles & Brew booking mirror failed', error);
-              }
+              } catch (error) { console.warn('Bubbles & Brew booking mirror failed', error); }
             });
-
             observer.observe(result, { childList: true, characterData: true, subtree: true });
           })();
           </script>
           '''
-          if "MVP booking bridge: live Firestore bookings" not in html:
+          if "legacy-live-firestore-mirror" not in html:
               if marker not in html:
                   raise SystemExit("Closing body tag not found; refusing to inject booking bridge.")
               html = html.replace(marker, bridge + "\n" + marker, 1)
           index.write_text(html, encoding="utf-8")
-          print("Injected the protected same-device live-booking mirror for the MVP dashboard")
+          PY
+
+      - name: Install zero-cost Firestore booking backend
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          index = Path("index.html")
+          html = index.read_text(encoding="utf-8")
+          marker = "</body>"
+          tag = '<script src="/js/expo-firestore-booking.js"></script>'
+          if tag not in html:
+              if marker not in html:
+                  raise SystemExit("Closing body tag not found; refusing to deploy without the Firestore booking backend.")
+              html = html.replace(marker, tag + "\n" + marker, 1)
+          index.write_text(html, encoding="utf-8")
+          print("Installed the zero-cost direct Firestore booking backend")
           PY
 
       - name: Setup Pages
