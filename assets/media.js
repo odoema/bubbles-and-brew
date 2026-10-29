@@ -6,10 +6,9 @@ window.BB_MEDIA = {
   img2: '/assets/img2.jpg'
 };
 
-// Master brand treatment: keep the existing application structure and behavior,
-// while making the approved Bubbles & Brew logo the visual source of truth.
+// Master brand treatment: preserve the full master logo everywhere except the compact header logo.
 (function () {
-  const logo = '/assets/Bubbles%20%26%20Brew%20Carwash%20Cafe%20Logo.png';
+  const headerLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASsAAAA/CAYAAAC4lO6NAAAAAXNSR0IArs4cAA...';
 
   const style = document.createElement('style');
   style.id = 'bb-master-brand';
@@ -37,9 +36,9 @@ window.BB_MEDIA = {
     .topbar nav a { color: var(--navy); }
     .topbar nav a:hover { background: rgba(7,155,183,.10); }
 
-    /* Use the approved complete logo in the header without changing the DOM. */
+    /* Compact approved header logo only. */
     .brand-mark {
-      content: url('${logo}');
+      content: url('${headerLogo}');
       width: 150px;
       height: 60px;
       object-fit: contain;
@@ -71,15 +70,6 @@ window.BB_MEDIA = {
     .footer-small { color: var(--aqua2); }
     .footer-links a:hover { color: var(--aqua2); }
     :focus-visible { outline-color: var(--aqua); }
-
-    /* Make the large brand lockups use the same approved logo. */
-    .hero-logo img,
-    .footer-logo img {
-      content: url('${logo}');
-      object-fit: contain;
-    }
-    .hero-logo img { width: min(760px, 100%); height: auto; }
-    .footer-logo img { width: 260px; height: auto; }
 
     body.dark {
       --bg: #062631;
