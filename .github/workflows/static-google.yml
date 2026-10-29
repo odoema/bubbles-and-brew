@@ -37,7 +37,6 @@ jobs:
           import re, os
           from collections import deque
 
-          # Official logo optimization used by the existing site.
           source = Path("assets/Bubbles & Brew Carwash Cafe Logo.png")
           target = Path("assets/Bubbles-Brew-master-logo-transparent.png")
           image = Image.open(source).convert("RGBA")
@@ -65,14 +64,12 @@ jobs:
                       r,g,b,a = out[x,y]; out[x,y] = (r,g,b,0)
           output.save(target, "PNG", optimize=True)
 
-          # Keep the existing optimized Café/Beauty assets in the deployment.
           for source_path, target_path in [
               (Path("assets/cafe/Bubbles & Brew Café Lounge.png"), Path("assets/cafe/cafe-lounge-hero.webp")),
               (Path("assets/Bubbles&Brew_Beauty_Parlour_Lounge.png"), Path("assets/beauty-parlour-hero.webp"))
           ]:
               if source_path.exists(): Image.open(source_path).convert("RGB").save(target_path, "WEBP", quality=82, method=6)
 
-          # Remove the retired Firebase SDK and bridge from the published artifact.
           index = Path("index.html")
           html = index.read_text(encoding="utf-8")
           html = re.sub(r'<script src="https://www\.gstatic\.com/firebasejs/[^\"]+firebase-app-compat\.js"></script>\s*', '', html)
@@ -92,13 +89,12 @@ jobs:
           })();"""
           html, count = pattern.subn(replacement, html, count=1)
           if count != 1: raise SystemExit('Homepage reveal guard not found.')
-          # Force browsers/CDNs to fetch the current production JavaScript after every deploy.
           version = os.environ.get('DEPLOY_SHA', 'dev')[:12]
           html = html.replace('<script src="/js/config.js"></script>', f'<script src="/js/config.js?v={version}"></script>')
           html = html.replace('<script src="/js/app-google.js"></script>', f'<script src="/js/app-google.js?v={version}"></script>')
+          html = html.replace('<script src="/assets/hero-slider.js"></script>', f'<script src="/assets/hero-slider.js?v={version}"></script>')
           index.write_text(html, encoding="utf-8")
 
-          # Swap the public operations page to the Google Workspace version.
           dashboard = Path("dashboard.html")
           dhtml = dashboard.read_text(encoding="utf-8").replace('<script src="/js/dashboard.js"></script>', '<script src="/js/config.js"></script>\n<script src="/js/dashboard-google.js"></script>')
           dhtml = dhtml.replace('secure Firebase staff dashboard is enabled', 'Google Workspace operations are enabled')
