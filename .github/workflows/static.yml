@@ -130,6 +130,38 @@ jobs:
           print("Updated deployment copy of media.js to use the optimized Beauty image")
           PY
 
+      - name: Prevent legacy homepage flash in deployed artifact
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          index = Path("index.html")
+          html = index.read_text(encoding="utf-8")
+          old = """<script>
+          /* Reveal only after the current homepage has been enhanced; never expose the legacy static layer first. */
+          document.documentElement.classList.remove('bb-loading');
+          document.body.classList.remove('bb-loading');
+          </script>"""
+          new = """<script>
+          /* Reveal only after media.js and hero-slider.js have completed their DOMContentLoaded work. */
+          (function () {
+            function revealHomepage() {
+              document.documentElement.classList.remove('bb-loading');
+              document.body.classList.remove('bb-loading');
+            }
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', revealHomepage, { once: true });
+            } else {
+              revealHomepage();
+            }
+          })();
+          </script>"""
+          if old not in html:
+              raise SystemExit("Expected homepage reveal block was not found; refusing to deploy an unverified replacement.")
+          index.write_text(html.replace(old, new, 1), encoding="utf-8")
+          print("Homepage reveal is now gated behind DOMContentLoaded")
+          PY
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
