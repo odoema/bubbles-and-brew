@@ -23,7 +23,7 @@ window.BB_MEDIA = {
       --orange: #a9550c;
       --brown: #a9550c;
       --teal: #087f96;
-      --paper: #fbfbf8;
+      --paper: #ffffff;
       --ink: #123c49;
       --muted: #5d747c;
       --line: #d5e6e9;
@@ -31,26 +31,42 @@ window.BB_MEDIA = {
       --card: #ffffff;
       --shadow: 0 18px 55px rgba(6,59,77,.11);
     }
-    body { background: var(--bg); color: var(--ink); }
-    .topbar { background: rgba(251,251,248,.96); color: var(--navy); }
-    .topbar nav a { color: var(--navy); }
+
+    /* Clean white header: it intentionally matches the light logo background. */
+    .topbar {
+      height: 92px;
+      background: #ffffff !important;
+      color: var(--navy);
+      border-bottom: 1px solid #dce8eb;
+      box-shadow: 0 4px 18px rgba(6,59,77,.07);
+      backdrop-filter: none;
+    }
+    .topbar nav a { color: var(--navy) !important; }
     .topbar nav a:hover { background: rgba(7,155,183,.10); }
 
     /* The official master logo is used everywhere; no cropped or alternate logo. */
     .brand-mark {
       content: url('${MASTER_LOGO}');
-      width: 180px;
-      height: 76px;
+      width: 220px;
+      height: 82px;
+      display: block;
       object-fit: contain;
-      object-position: left center;
+      object-position: center;
       background: transparent !important;
+      filter: drop-shadow(0 2px 3px rgba(6,59,77,.12));
+      image-rendering: auto;
+      transform: translateZ(0);
     }
     .brand-word { display: none !important; }
+
     .hero-logo img,
     .footer-logo img {
       content: url('${MASTER_LOGO}');
       object-fit: contain;
       background: transparent !important;
+      image-rendering: auto;
+      filter: drop-shadow(0 3px 5px rgba(6,59,77,.16));
+      transform: translateZ(0);
     }
     .footer-logo { background: transparent !important; }
 
@@ -73,6 +89,15 @@ window.BB_MEDIA = {
     .footer-links a:hover { color: var(--aqua2); }
     :focus-visible { outline-color: var(--aqua); }
     body.dark { --bg: #062631; --card: #0b3441; --ink: #eaf8fa; --muted: #a9c5cb; --line: #1c4b58; }
+
+    @media (max-width: 850px) {
+      .topbar { height: 82px; }
+      .brand-mark { width: 190px; height: 72px; }
+    }
+    @media (max-width: 520px) {
+      .topbar { height: 76px; }
+      .brand-mark { width: 168px; height: 64px; }
+    }
   `;
   document.head.appendChild(style);
 
@@ -80,6 +105,8 @@ window.BB_MEDIA = {
     document.querySelectorAll('.brand-mark, .hero-logo img, .footer-logo img').forEach(function (img) {
       img.src = MASTER_LOGO;
       img.removeAttribute('srcset');
+      img.loading = 'eager';
+      img.decoding = 'async';
     });
     document.querySelectorAll('.brand-word').forEach(function (img) {
       img.style.display = 'none';
@@ -93,5 +120,5 @@ window.BB_MEDIA = {
   }
 
   const theme = document.querySelector('meta[name="theme-color"]');
-  if (theme) theme.setAttribute('content', '#063b4d');
+  if (theme) theme.setAttribute('content', '#ffffff');
 })();
