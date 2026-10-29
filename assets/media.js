@@ -44,12 +44,23 @@ window.BB_MEDIA = {
     .btn, button, input, select { font-family: 'Manrope', system-ui, sans-serif !important; }
 
     .topbar {
-      height: 118px;
+      height: 138px;
+      padding: 10px 24px;
+      box-sizing: border-box;
       background: #ffffff !important;
       color: var(--navy);
       border-bottom: 1px solid #dce8eb;
       box-shadow: 0 4px 18px rgba(6,59,77,.07);
       backdrop-filter: none;
+    }
+
+    /* Give the official logo breathing room above and below without changing the logo asset. */
+    .topbar .brand {
+      height: 100%;
+      padding: 6px 0;
+      box-sizing: border-box;
+      align-items: center;
+      overflow: visible;
     }
 
     /* Restored original customer-facing navigation. Every item has a live destination. */
@@ -106,16 +117,16 @@ window.BB_MEDIA = {
     body.dark { --bg: #062631; --card: #0b3441; --ink: #eaf8fa; --muted: #a9c5cb; --line: #1c4b58; }
 
     @media (max-width: 1100px) {
-      .topbar { height: 112px; }
+      .topbar { height: 132px; padding: 8px 18px; }
       .brand-mark { width: 420px; height: 150px; max-width: 38vw; }
       .topbar nav a { padding: 9px 10px; font-size: 13px; }
     }
     @media (max-width: 850px) {
-      .topbar { height: 104px; }
+      .topbar { height: 124px; padding: 7px 14px; }
       .brand-mark { width: 450px; height: 160px; max-width: 55vw; }
     }
     @media (max-width: 520px) {
-      .topbar { height: 92px; }
+      .topbar { height: 112px; padding: 6px 10px; }
       .brand-mark { width: 390px; height: 140px; max-width: 72vw; }
     }
   `;
