@@ -140,16 +140,11 @@ jobs:
           index = Path("index.html")
           html = index.read_text(encoding="utf-8")
           pattern = re.compile(
-              r"<script>\s*"
-              r"/\* Reveal only after the current homepage has been enhanced; never expose the legacy static layer first\. \*/\s*"
-              r"document\.documentElement\.classList\.remove\('bb-loading'\);\s*"
-              r"document\.body\.classList\.remove\('bb-loading'\);\s*"
-              r"</script>",
+              r"document\\.documentElement\\.classList\\.remove\\('bb-loading'\\);\\s*"
+              r"document\\.body\\.classList\\.remove\\('bb-loading'\\);",
               re.MULTILINE,
           )
-          replacement = """<script>
-          /* Reveal only after media.js and hero-slider.js have completed their DOMContentLoaded work. */
-          (function () {
+          replacement = """(function () {
             function revealHomepage() {
               document.documentElement.classList.remove('bb-loading');
               document.body.classList.remove('bb-loading');
@@ -159,11 +154,10 @@ jobs:
             } else {
               revealHomepage();
             }
-          })();
-          </script>"""
+          })();"""
           html, count = pattern.subn(replacement, html, count=1)
           if count != 1:
-              raise SystemExit("Homepage reveal block was not found; refusing to deploy an unverified artifact.")
+              raise SystemExit("Homepage reveal statements were not found; refusing to deploy an unverified artifact.")
           index.write_text(html, encoding="utf-8")
           print("Homepage reveal is now gated behind DOMContentLoaded")
           PY
