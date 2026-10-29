@@ -22,35 +22,35 @@ The visual system is designed to accept the supplied vehicle-care photography an
 
 ### Important
 
-The booking flow is **still preview mode**. It stores test bookings in the customer's browser only. No customer information is currently sent to a live backend.
+The booking flow is **still preview mode** until Firebase is configured. It stores test bookings in the customer's browser only when Firebase config is empty.
 
-A real backend has deliberately **not** been connected yet because no verified Bubbles & Brew Supabase project has been provided/configured. Do not connect this project to an unrelated Supabase project.
+A real backend has deliberately **not** been fully wired yet. Fill `js/config.js` with the **bubbles-and-brew** Firebase web app keys and deploy the Cloud Function before going live.
 
 ## Target production architecture
 
 ```text
 Customer PWA
     ↓ HTTPS
-Supabase
-    ├── PostgreSQL
-    ├── Auth
-    ├── RLS
-    ├── Storage
-    ├── Edge Functions
-    └── Realtime
+Firebase
+    ├── Authentication
+    ├── Cloud Firestore
+    ├── Security Rules
+    ├── Cloud Storage
+    ├── Cloud Functions
+    └── (optional) Cloud Messaging / Hosting
           ↓
 Bookings · Wash Queue · Bays · Staff · Vehicles
 Memberships · Loyalty · Payments · Receipts · Fleet
 ```
 
-See [`docs/TECHNICAL-ASSESSMENT.md`](docs/TECHNICAL-ASSESSMENT.md).
+See [`docs/TECHNICAL-ASSESSMENT.md`](docs/TECHNICAL-ASSESSMENT.md) and [`docs/BACKEND-READINESS.md`](docs/BACKEND-READINESS.md).
 
 ## Deployment
 
 - Frontend: GitHub Pages
 - Domain: `bubblesandbrew.online`
 - Source branch: `main`
-- Backend: Supabase, to be connected after project verification
+- Backend: Firebase project **bubbles-and-brew**
 
 Only one static Pages workflow should be used for this project.
 
