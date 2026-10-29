@@ -7,9 +7,9 @@ window.BB_MEDIA = {
 };
 
 (function () {
-  // ONE SOURCE OF TRUTH FOR THE BRAND LOGO.
-  // Do not introduce compact/cropped/alternate logo files into the UI.
-  const MASTER_LOGO = '/assets/Bubbles%20%26%20Brew%20Carwash%20Cafe%20Logo.png';
+  // ONE SOURCE OF TRUTH: the official master PNG in assets.
+  // GitHub Pages generates a transparent-background derivative from this source at deploy time.
+  const MASTER_LOGO = '/assets/Bubbles-Brew-master-logo-transparent.png';
 
   const style = document.createElement('style');
   style.id = 'bb-master-brand';
@@ -36,20 +36,23 @@ window.BB_MEDIA = {
     .topbar nav a { color: var(--navy); }
     .topbar nav a:hover { background: rgba(7,155,183,.10); }
 
-    /* The official master PNG is the only logo displayed in the interface. */
+    /* The official master logo is used everywhere; no cropped or alternate logo. */
     .brand-mark {
       content: url('${MASTER_LOGO}');
       width: 180px;
       height: 76px;
       object-fit: contain;
       object-position: left center;
+      background: transparent !important;
     }
     .brand-word { display: none !important; }
     .hero-logo img,
     .footer-logo img {
       content: url('${MASTER_LOGO}');
       object-fit: contain;
+      background: transparent !important;
     }
+    .footer-logo { background: transparent !important; }
 
     .hero h1 { color: var(--navy); }
     .hero h1 em { color: var(--brown); }
@@ -66,7 +69,6 @@ window.BB_MEDIA = {
     .experience-panel, .dashboard-preview, footer { background: linear-gradient(135deg, var(--navy), var(--navy2)); }
     .mini-flow i { color: var(--aqua); }
     .booking-note { background: var(--cream); border-color: #e5c7a5; color: #754112; }
-    .footer-logo { background: #fff; }
     .footer-small { color: var(--aqua2); }
     .footer-links a:hover { color: var(--aqua2); }
     :focus-visible { outline-color: var(--aqua); }
