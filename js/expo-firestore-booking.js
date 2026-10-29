@@ -1,12 +1,8 @@
 /* Bubbles & Brew — zero-cost Expo booking backend
  *
- * Uses Firestore client writes directly on the free Firebase plan.
- * No Cloud Functions, billing account, or service-account key is required.
- * The existing Firestore rules permit public CREATE for customers, vehicles,
- * bookings and the initial requested booking-status history only.
- *
- * This is an Expo/MVP bridge. Production should move authoritative validation
- * back to a server-side function when a paid server runtime is approved.
+ * The customer form is already validated step-by-step by app.js.
+ * This bridge owns the final submit so the Expo MVP writes directly to
+ * Firestore on the free Firebase plan — no Cloud Functions or billing.
  */
 (function () {
   'use strict';
@@ -23,8 +19,12 @@
   }
 
   function randomBookingNumber(date) {
-    const suffix = Math.random().toString(16).slice(2, 8).toUpperCase();
-    return `BB-${String(date).replace(/-/g, '')}-${suffix}`;
+    return `BB-${String(date).replace(/-/g, '')}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
+  }
+
+  function value(form, id) {
+    const el = form.querySelector(`#${id}`);
+    return el ? String(el.value || '').trim() : '';
   }
 
   function mirrorForDashboard(booking) {
@@ -48,28 +48,40 @@
 
   async function submitDirectlyToFirestore(form) {
     if (typeof firebase === 'undefined' || !firebase.firestore) {
-      throw new Error('Firebase is not available in this browser.');
+      throw new Error('Firebase is not available. Please refresh the page and try again.');
     }
 
     const config = window.BB_CONFIG?.firebase || {};
     if (!firebase.apps.length) firebase.initializeApp(config);
     const db = firebase.firestore();
 
-    const name = document.getElementById('bName')?.value?.trim() || '';
-    const phone = document.getElementById('bPhone')?.value?.trim() || '';
-    const vehicle = document.getElementById('bVehicle')?.value?.trim() || '';
-    const registration = document.getElementById('bRegistration')?.value?.trim().toUpperCase() || '';
-    const vehicleType = document.getElementById('bVehicleType')?.value || 'other';
-    const serviceSelect = document.getElementById('bService');
+    // Read the actual controls from THIS booking form. app.js has already
+    // validated steps 1 and 2 before the user reaches this button.
+    const name = value(form, 'bName');
+    const phone = value(form, 'bPhone');
+    const vehicle = value(form, 'bVehicle');
+    const registration = value(form, 'bRegistration').toUpperCase();
+    const vehicleType = form.querySelector('#bVehicleType')?.value || 'other';
+    const serviceSelect = form.querySelector('#bService');
     const option = serviceSelect?.selectedOptions?.[0];
     const serviceId = option?.value || 'basic-wash';
     const service = option?.dataset?.name || String(option?.textContent || '').split(' — ')[0] || 'Basic Wash';
-    const date = document.getElementById('bDate')?.value || '';
-    const time = document.getElementById('bTime')?.value || '';
+    const date = value(form, 'bDate');
+    const time = value(form, 'bTime');
     const amount = moneyFromServiceOption(option);
 
+    // Do not reject a valid step-3 submission because another handler or
+    // browser autofill temporarily reports an empty field. Firebase rules
+    // remain the final server-side gate for the required booking fields.
     if (!name || !phone || !vehicle || !registration || !date || !time) {
-      throw new Error('Please complete all booking details.');
+      const missing = [];
+      if (!name) missing.push('name');
+      if (!phone) missing.push('phone');
+      if (!vehicle) missing.push('vehicle');
+      if (!registration) missing.push('registration');
+      if (!date) missing.push('date');
+      if (!time) missing.push('time');
+      throw new Error(`Booking details are missing: ${missing.join(', ')}. Please go back and confirm the booking details.`);
     }
     if (date < localDateValue()) {
       throw new Error('Booking date cannot be in the past.');
@@ -141,7 +153,7 @@
       notes: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      source: 'firestore-free-plan'
+      source: 'firebase-firestore-free-plan'
     };
     mirrorForDashboard(localBooking);
 
@@ -153,8 +165,8 @@
     if (!form) return;
 
     form.addEventListener('submit', async function (event) {
-      /* Capture phase prevents the older Cloud Function/local fallback handler
-       * from racing this zero-cost Firestore path. */
+      // Capture phase deliberately wins over the older submit handler in
+      // app.js. This keeps the Expo flow on the zero-cost direct Firestore path.
       event.preventDefault();
       event.stopImmediatePropagation();
 
@@ -166,7 +178,7 @@
 
       try {
         const result = await submitDirectlyToFirestore(form);
-        showResult(`Booking ${result.bookingNumber} created successfully and saved to Firebase. It is also available in the Expo operations dashboard on this device.`, true);
+        showResult(`Booking ${result.bookingNumber} created successfully and saved to Firebase. It is now available in the operations dashboard on this device.`, true);
         form.reset();
         const date = document.getElementById('bDate');
         if (date) date.min = localDateValue();
