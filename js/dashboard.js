@@ -13,9 +13,9 @@
   const normalize = b => ({
     id: b.id || `BB-${Date.now().toString().slice(-6)}`,
     bookingNumber: b.bookingNumber || b.id || `BB-${Date.now().toString().slice(-6)}`,
-    name: b.name || 'Walk-in customer', phone: b.phone || '', vehicle: b.vehicle || b.vehicleMakeModel || 'Vehicle',
+    name: b.name || b.fullName || 'Walk-in customer', phone: b.phone || '', vehicle: b.vehicle || b.vehicleMakeModel || 'Vehicle',
     registration: String(b.registration || b.registrationNo || '').toUpperCase(), vehicleType: b.vehicleType || 'other',
-    service: b.service || 'Full Wash', date: b.date || b.scheduledDate || today(), time: b.time || b.scheduledTime || '09:00',
+    service: b.service || b.serviceName || 'Full Wash', date: b.date || b.scheduledDate || today(), time: b.time || b.scheduledTime || '09:00',
     status: String(b.status || 'requested').toLowerCase(), amount: Number(b.amount ?? b.quotedAmountUgx ?? prices[b.service] ?? 0),
     notes: b.notes || '', createdAt: b.createdAt || new Date().toISOString(), updatedAt: b.updatedAt || b.createdAt || new Date().toISOString()
   });
@@ -39,7 +39,10 @@
       const next = nextStatus[b.status], action = next ? `<button data-action="${next}" data-id="${b.id}">${statusLabels[next]}</button>` : '';
       const cancel = ['completed','cancelled','no_show'].includes(b.status) ? '' : `<button data-action="cancelled" data-id="${b.id}">CANCEL</button>`;
       const noShow = ['completed','cancelled','no_show'].includes(b.status) ? '' : `<button data-action="no_show" data-id="${b.id}">NO-SHOW</button>`;
-      return `<tr><td><span class="booking-no">${b.bookingNumber}</span><br><span class="muted">${new Date(b.createdAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span></td><td><b>${escapeHtml(b.name)}</b><br><span class="muted">${escapeHtml(b.phone)}</span></td><td><span class="vehicle">${escapeHtml(b.vehicle)}</span><br><span class="muted">${escapeHtml(b.registration)}</span></td><td>${escapeHtml(b.service)}</td><td>${escapeHtml(b.date)}<br><b>${escapeHtml(b.time)}</b></td><td><span class="status ${b.status}">${statusLabels[b.status] || b.status.toUpperCase()}</span></td><td>${money(b.amount)}</td><td><div class="actions">${action}${cancel}${noShow}</div></td></tr>`;
+      const isNew = b.status === 'requested';
+      const created = new Date(b.createdAt);
+      const createdText = Number.isNaN(created.getTime()) ? '' : created.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      return `<tr class="${isNew ? 'new-booking-row' : ''}"><td><span class="booking-no">${escapeHtml(b.bookingNumber)}</span>${isNew ? ' <span class="new-badge">NEW</span>' : ''}<br><span class="muted">Received ${escapeHtml(createdText)}</span></td><td><b>${escapeHtml(b.name)}</b><br><span class="muted">${escapeHtml(b.phone)}</span></td><td><span class="vehicle">${escapeHtml(b.vehicle)}</span><br><span class="muted">${escapeHtml(b.registration)}</span></td><td>${escapeHtml(b.service)}</td><td>${escapeHtml(b.date)}<br><b>${escapeHtml(b.time)}</b></td><td><span class="status ${b.status}">${statusLabels[b.status] || b.status.toUpperCase()}</span></td><td>${money(b.amount)}</td><td><div class="actions">${action}${cancel}${noShow}</div></td></tr>`;
     }).join('');
   }
   function escapeHtml(v) { return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
@@ -52,6 +55,7 @@
   $('#clearData').addEventListener('click',()=>{if(!confirm('Clear all local MVP booking data from this device? This cannot be undone.'))return;localStorage.removeItem(KEY);render();toast('Local test data cleared');});
   $('#print').addEventListener('click',()=>window.print()); document.addEventListener('keydown',e=>{if(e.key==='Escape')openModal(false);});
   window.addEventListener('storage', e => { if(e.key === KEY) render(); });
-  setInterval(render, 1500);
+  window.addEventListener('focus', render);
+  setInterval(render, 1000);
   render();
 })();
