@@ -1,7 +1,5 @@
-const CACHE = 'bb-v2-5';
+const CACHE = 'bb-v3-0';
 const ASSETS = [
-  '/',
-  '/index.html',
   '/css/app.css',
   '/js/app.js',
   '/js/config.js',
@@ -17,41 +15,62 @@ const ASSETS = [
   '/assets/img2.jpg',
   '/manifest.webmanifest'
 ];
-self.addEventListener('install', e => {
+
+self.addEventListener('install', event => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
 });
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then(clients => clients.forEach(client => client.postMessage({ type: 'BB_REFRESH' })))
   );
 });
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  // Always take network first for JS/CSS so updates show on mobile
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    e.respondWith(
-      fetch(e.request)
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-          return res;
-        })
-        .catch(() => caches.match(e.request))
+
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  const isNavigation = event.request.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('/index.html');
+  const isCode = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+
+  // Never let an old cached HTML document become a second/stale home page.
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => response)
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
-  e.respondWith(
-    caches.match(e.request).then(r =>
-      r ||
-      fetch(e.request).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-        return res;
-      }).catch(() => caches.match('/index.html'))
+
+  // Always take network first for application code so deployments cannot mix versions.
+  if (isCode) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cached =>
+      cached || fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(event.request, copy));
+        return response;
+      })
     )
   );
 });
