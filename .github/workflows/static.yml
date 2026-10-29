@@ -1,4 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
+# Production flash guard: legacy homepage stays hidden until enhancement completes.
 name: Deploy static content to Pages
 
 on:
