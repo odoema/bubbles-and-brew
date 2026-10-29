@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#063b4d">
+<title>Bubbles & Brew — Backend Test Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#063b4d;--aqua:#079bb7;--ink:#123c49;--muted:#5d747c;--line:#d5e6e9;--bg:#f5fafb;--ok:#167246;--bad:#a33b3b;--amber:#9a6200}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Manrope,system-ui,sans-serif}.wrap{max-width:1050px;margin:auto;padding:24px}.top{background:#fff;border-bottom:1px solid var(--line)}.topin{max-width:1050px;margin:auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:15px}.logo{width:220px;height:75px;object-fit:contain}.btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}.btn.primary{background:var(--aqua);border-color:var(--aqua);color:#fff}.btn:disabled{opacity:.5;cursor:not-allowed}.hero{padding:30px 0 18px}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.16em;color:var(--aqua);text-transform:uppercase}.hero h1{font:800 clamp(2rem,5vw,3.4rem)/1 Bricolage Grotesque;color:var(--navy);margin:8px 0}.hero p{color:var(--muted)}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 8px 28px rgba(6,59,77,.06)}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.status{padding:8px 12px;border-radius:999px;font-weight:800;font-size:12px;background:#eef3f5;color:var(--muted)}.status.ok{background:#e7f7ed;color:var(--ok)}.status.bad{background:#fceaea;color:var(--bad)}.status.running{background:#fff3dc;color:var(--amber)}.tests{display:grid;gap:8px}.test{display:grid;grid-template-columns:180px 100px 1fr;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #edf3f4}.test:last-child{border-bottom:0}.test-name{font-weight:800}.pass{color:var(--ok);font-weight:900}.fail{color:var(--bad);font-weight:900}.skip{color:var(--muted);font-weight:900}.log{background:#0b2028;color:#dff8fc;border-radius:12px;padding:14px;min-height:180px;white-space:pre-wrap;word-break:break-word;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}.note{color:var(--muted);font-size:12px}.tokenbox{display:none;gap:10px;margin-top:12px}.tokenbox.open{display:flex}.tokenbox input{flex:1;border:1px solid #c9dde0;border-radius:10px;padding:10px}.summary{display:flex;gap:10px;flex-wrap:wrap}.summary div{padding:10px 13px;background:#f8fcfd;border:1px solid var(--line);border-radius:10px;font-weight:800}.danger-note{background:#fff5e9;border:1px solid #ead0ad;border-radius:12px;padding:12px;color:#754112;font-size:12px}@media(max-width:700px){.topin{padding:12px 14px}.logo{width:185px;height:62px}.wrap{padding:18px 14px}.test{grid-template-columns:1fr 80px}.test .detail{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin"><a href="/"><img class="logo" src="/assets/Bubbles-Brew-master-logo-transparent.png" alt="Bubbles & Brew"></a><a class="btn" href="/dashboard.html">Open dashboard</a></div></header>
+<main class="wrap">
+<section class="hero"><span class="eyebrow">SYSTEM DIAGNOSTICS · GOOGLE WORKSPACE</span><h1>Backend test console.</h1><p>This page tests the complete Bubbles & Brew path: website → Apps Script → Google Sheets → dashboard operations.</p></section>
+<section class="card"><div class="controls"><button class="btn primary" id="run">Run full test</button><button class="btn" id="health">Health</button><button class="btn" id="services">Services</button><button class="btn" id="read">Read bookings</button><span class="status" id="overall">Not tested</span></div><div class="tokenbox" id="tokenbox"><input id="token" type="password" placeholder="Dashboard access code"><button class="btn primary" id="saveToken">Authorize</button></div><p class="note">The dashboard access code is kept only in this browser session. It is never committed to GitHub.</p></section>
+<section class="card"><div class="summary" id="summary"><div>0 passed</div><div>0 failed</div><div>0 skipped</div></div></section>
+<section class="card"><div class="tests" id="tests"></div></section>
+<section class="card"><div class="danger-note"><b>Test data:</b> The full test creates two clearly labelled temporary bookings in Google Sheets, exercises their status changes, then cancels them. They remain in the audit trail and are not deleted.</div></section>
+<section class="card"><h3>Diagnostic log</h3><div class="log" id="log">Ready.</div></section>
+</main>
+<script src="/js/config.js"></script>
+<script>
+(() => {
+  const API=(window.BB_CONFIG||{}).googleAppsScriptUrl||'';
+  const KEY='bb-dashboard-test-token';
+  const $=s=>document.querySelector(s);
+  const tests=[];
+  let currentCustomerBooking='';
+  let currentWalkinBooking='';
+  const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+  const futureTime=()=>{const d=new Date(Date.now()+15*60000);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+  const log=(m)=>{$('#log').textContent+=`\n${new Date().toLocaleTimeString()}  ${m}`;$('#log').scrollTop=$('#log').scrollHeight};
+  const token=()=>sessionStorage.getItem(KEY)||'';
+  function add(name,state,detail){tests.push({name,state,detail});renderTests()}
+  function renderTests(){
+    $('#tests').innerHTML=tests.map(t=>`<div class="test"><div class="test-name">${t.name}</div><div class="${t.state==='PASS'?'pass':t.state==='FAIL'?'fail':'skip'}">${t.state}</div><div class="detail">${escapeHtml(t.detail||'')}</div></div>`).join('');
+    const p=tests.filter(t=>t.state==='PASS').length,f=tests.filter(t=>t.state==='FAIL').length,s=tests.filter(t=>t.state==='SKIP').length;
+    $('#summary').innerHTML=`<div>${p} passed</div><div>${f} failed</div><div>${s} skipped</div>`;
+    const overall=$('#overall');overall.textContent=f?'Failed':p===tests.length&&tests.length?'Passed':'Running';overall.className='status '+(f?'bad':p===tests.length&&tests.length?'ok':'running');
+  }
+  function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+  async function get(params={}){if(!API)throw Error('googleAppsScriptUrl is empty.');const u=new URL(API);Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));u.searchParams.set('_t',Date.now());const r=await fetch(u.toString(),{cache:'no-store'});const d=await r.json().catch(()=>({success:false,error:'Backend did not return JSON.'}));if(!d.success)throw Error(d.error||'Backend request failed.');return d}
+  async function post(payload){if(!API)throw Error('googleAppsScriptUrl is empty.');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({success:false,error:'Backend did not return JSON.'}));if(!d.success)throw Error(d.error||'Backend request failed.');return d}
+  async function ensureToken(){let t=token();if(t)return t;$('#tokenbox').classList.add('open');t=prompt('Enter the Bubbles & Brew dashboard access code.');if(t){sessionStorage.setItem(KEY,t.trim());$('#token').value=t.trim();return t.trim()}throw Error('Dashboard access code required for protected tests.');}
+  async function health(){try{const d=await get({action:'health'});add('Apps Script health','PASS',`${d.name||'Backend'} · ready=${d.ready}`);log('Health OK');return d}catch(e){add('Apps Script health','FAIL',e.message);log('Health FAILED: '+e.message);throw e}}
+  async function services(){try{const d=await get({action:'services'});add('Public services','PASS',`${(d.services||[]).length} active services returned`);log('Services OK');return d}catch(e){add('Public services','FAIL',e.message);log('Services FAILED: '+e.message);throw e}}
+  async function read(){try{const t=await ensureToken();const d=await get({action:'bookings',token:t});add('Protected booking read','PASS',`${(d.bookings||[]).length} live booking(s) returned`);log(`Booking read OK: ${(d.bookings||[]).length} rows`);return d}catch(e){add('Protected booking read','FAIL',e.message);log('Booking read FAILED: '+e.message);throw e}}
+  async function customerBooking(){const t=token();try{const date=today(),time=futureTime(),suffix=Math.random().toString(36).slice(2,7).toUpperCase();const d=await post({action:'createBooking',name:'SYSTEM TEST — DO NOT SERVE',phone:'070000'+Math.floor(100+Math.random()*899),vehicle:'TEST VEHICLE',registration:'TST '+suffix,vehicleType:'saloon',serviceId:'basic-wash',date,time,notes:'AUTOMATED BACKEND TEST'});currentCustomerBooking=d.bookingNumber;add('Customer booking write','PASS',`${d.bookingNumber} · UGX ${Number(d.quotedAmountUgx||0).toLocaleString()}`);log(`Customer booking created: ${d.bookingNumber}`);return d}catch(e){add('Customer booking write','FAIL',e.message);log('Customer booking FAILED: '+e.message);throw e}}
+  async function walkin(){try{const t=await ensureToken(),date=today(),time=futureTime(),suffix=Math.random().toString(36).slice(2,7).toUpperCase();const d=await post({action:'createWalkin',dashboardToken:t,name:'SYSTEM TEST WALK-IN — DO NOT SERVE',phone:'070000'+Math.floor(100+Math.random()*899),vehicle:'TEST WALK-IN VEHICLE',registration:'WKN '+suffix,vehicleType:'suv',service:'Full Wash',date,time,notes:'AUTOMATED WALK-IN BACKEND TEST'});currentWalkinBooking=d.bookingNumber;add('Walk-in booking write','PASS',`${d.bookingNumber} · status=${d.status}`);log(`Walk-in created: ${d.bookingNumber}`);return d}catch(e){add('Walk-in booking write','FAIL',e.message);log('Walk-in FAILED: '+e.message);throw e}}
+  async function status(id,status){try{const t=await ensureToken();const d=await post({action:'updateStatus',dashboardToken:t,bookingNumber:id,status});add(`${id} → ${status}`,'PASS','Status update accepted');log(`${id} status → ${status}`);return d}catch(e){add(`${id} → ${status}`,'FAIL',e.message);log(`${id} status FAILED: ${e.message}`);throw e}}
+  async function cleanup(){for(const id of [currentCustomerBooking,currentWalkinBooking]){if(!id)continue;try{await status(id,'cancelled')}catch(e){log(`Cleanup failed for ${id}: ${e.message}`)}}}
+  async function runFull(){
+    tests.length=0;currentCustomerBooking='';currentWalkinBooking='';$('#log').textContent='Starting full end-to-end test...';renderTests();
+    try{await health();await services();await customerBooking();await read();await status(currentCustomerBooking,'confirmed');await status(currentCustomerBooking,'checked_in');await status(currentCustomerBooking,'washing');await status(currentCustomerBooking,'ready');await walkin();await read();await status(currentWalkinBooking,'confirmed');await status(currentWalkinBooking,'checked_in');await status(currentWalkinBooking,'washing');await status(currentWalkinBooking,'ready');await cleanup();await read();add('Final live read-back','PASS','Backend remains reachable after writes and cleanup');log('FULL TEST COMPLETE');}catch(e){log('FULL TEST STOPPED: '+e.message);await cleanup();}
+  }
+  $('#run').addEventListener('click',runFull);$('#health').addEventListener('click',async()=>{tests.length=0;renderTests();try{await health()}catch(e){}});$('#services').addEventListener('click',async()=>{tests.length=0;renderTests();try{await services()}catch(e){}});$('#read').addEventListener('click',async()=>{tests.length=0;renderTests();try{await read()}catch(e){}});$('#saveToken').addEventListener('click',()=>{const v=$('#token').value.trim();if(v){sessionStorage.setItem(KEY,v);$('#tokenbox').classList.remove('open');log('Access code saved for this browser session.')}});
+  renderTests();
+})();
+</script>
+</body>
+</html>
