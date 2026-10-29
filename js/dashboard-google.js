@@ -1,33 +1,58 @@
 (() => {
-  const KEY='bb-bookings';
-  const config=window.BB_CONFIG||{};
-  const apiUrl=String(config.googleAppsScriptUrl||'').replace(/\/$/,'');
-  const sheetUrl=String(config.operationsSheetUrl||'');
-  const prices={'Basic Wash':15000,'Full Wash':25000,'Premium Care':45000};
-  const labels={requested:'REQUESTED',confirmed:'CONFIRMED',checked_in:'CHECKED IN',washing:'WASHING',ready:'READY',completed:'COMPLETED',cancelled:'CANCELLED',no_show:'NO-SHOW'};
-  const next={requested:'confirmed',confirmed:'checked_in',checked_in:'washing',washing:'ready',ready:'completed'};
-  const $=s=>document.querySelector(s);
-  const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
-  const money=n=>`UGX ${Number(n||0).toLocaleString()}`;
-  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch(_){return[];}};
-  const write=list=>localStorage.setItem(KEY,JSON.stringify(list));
-  const normalize=b=>({id:b.id||b.bookingNumber||`BB-${Date.now()}`,bookingNumber:b.bookingNumber||b.id||'',name:b.name||b.fullName||'Walk-in customer',phone:b.phone||'',vehicle:b.vehicle||'Vehicle',registration:String(b.registration||b.registrationNo||'').toUpperCase(),vehicleType:b.vehicleType||'other',service:b.service||'Full Wash',date:b.date||b.scheduledDate||today(),time:b.time||b.scheduledTime||'09:00',status:String(b.status||'requested').toLowerCase(),amount:Number(b.amount??b.quotedAmountUgx??prices[b.service]??0),notes:b.notes||'',createdAt:b.createdAt||new Date().toISOString(),updatedAt:b.updatedAt||b.createdAt||new Date().toISOString()});
-  const list=()=>read().map(normalize);
-  const save=x=>write(x.map(normalize));
-  function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2800);}
-  function renderKpis(items){const t=today(),day=items.filter(b=>b.date===t),done=day.filter(b=>b.status==='completed'),revenue=done.reduce((s,b)=>s+b.amount,0);const counts=[['Bookings',day.length],['Requested',day.filter(b=>b.status==='requested').length],['Washing',day.filter(b=>b.status==='washing').length],['Ready',day.filter(b=>b.status==='ready').length],['Completed',done.length],['Revenue',money(revenue)]];$('#kpis').innerHTML=counts.map(([a,v])=>`<div class="kpi"><b>${v}</b><span>${a}</span></div>`).join('');}
-  function filtered(items){const q=($('#search').value||'').trim().toLowerCase(),df=$('#dateFilter').value,s=$('#statusFilter').value;return items.filter(b=>{if(df==='today'&&b.date!==today())return false;if(s!=='all'&&b.status!==s)return false;if(!q)return true;return [b.bookingNumber,b.name,b.phone,b.registration,b.vehicle,b.service,b.status].join(' ').toLowerCase().includes(q);}).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));}
-  function render(){const items=list();renderKpis(items);const rows=filtered(items),body=$('#bookingRows');if(!rows.length){body.innerHTML='<tr><td colspan="8"><div class="empty"><b>No local bookings in this view.</b>Bookings made on this device will appear here. The Google Sheet is the authoritative multi-device operations record.</div></td></tr>';return;}body.innerHTML=rows.map(b=>{const n=next[b.status],action=n?`<button data-action="${n}" data-id="${b.id}">${labels[n]}</button>`:'';const cancel=['completed','cancelled','no_show'].includes(b.status)?'':`<button data-action="cancelled" data-id="${b.id}">CANCEL</button>`;const noShow=['completed','cancelled','no_show'].includes(b.status)?'':`<button data-action="no_show" data-id="${b.id}">NO-SHOW</button>`;const created=new Date(b.createdAt),ct=Number.isNaN(created.getTime())?'':created.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});return `<tr class="${b.status==='requested'?'new-booking-row':''}"><td><span class="booking-no">${esc(b.bookingNumber)}</span>${b.status==='requested'?' <span class="new-badge">NEW</span>':''}<br><span class="muted">Received ${esc(ct)}</span></td><td><b>${esc(b.name)}</b><br><span class="muted">${esc(b.phone)}</span></td><td><span class="vehicle">${esc(b.vehicle)}</span><br><span class="muted">${esc(b.registration)}</span></td><td>${esc(b.service)}</td><td>${esc(b.date)}<br><b>${esc(b.time)}</b></td><td><span class="status ${b.status}">${labels[b.status]||esc(b.status.toUpperCase())}</span></td><td>${money(b.amount)}</td><td><div class="actions">${action}${cancel}${noShow}</div></td></tr>`;}).join('');}
-  const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  async function postStatus(bookingNumber,status){if(!apiUrl)return;try{const r=await fetch(apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateStatus',bookingNumber,status})});const d=await r.json();if(!d.success)throw new Error(d.error||'Status update failed');}catch(err){console.warn('Google status update failed',err);toast('Status saved locally; Google Sheet update needs attention.');}}
-  async function changeStatus(id,status){const items=list(),b=items.find(x=>x.id===id);if(!b)return;b.status=status;b.updatedAt=new Date().toISOString();save(items);toast(`${b.bookingNumber} → ${labels[status]}`);render();if(apiUrl)await postStatus(b.bookingNumber,status);}
+  const cfg = window.BB_CONFIG || {};
+  const API = cfg.googleAppsScriptUrl || '';
+  const TOKEN_KEY = 'bb-dashboard-token';
+  const statusLabels = { requested:'REQUESTED', confirmed:'CONFIRMED', checked_in:'CHECKED IN', washing:'WASHING', ready:'READY', completed:'COMPLETED', cancelled:'CANCELLED', no_show:'NO-SHOW' };
+  const nextStatus = { requested:'confirmed', confirmed:'checked_in', checked_in:'washing', washing:'ready', ready:'completed' };
+  const $ = s => document.querySelector(s);
+  const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const money = n => `UGX ${Number(n||0).toLocaleString()}`;
+  const token = () => sessionStorage.getItem(TOKEN_KEY) || '';
+  const askForToken = () => { const value=window.prompt('Enter the Bubbles & Brew Operations dashboard access code:'); if(value){sessionStorage.setItem(TOKEN_KEY,value.trim());return value.trim();} return ''; };
+  function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3000);}
+  function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+  async function request(url, options={}){
+    if(!API) throw new Error('Google Apps Script URL is not configured.');
+    const response=await fetch(url,{...options,cache:'no-store'});
+    const text=await response.text();
+    let data; try{data=JSON.parse(text);}catch(_){throw new Error('Backend returned an invalid response.');}
+    return data;
+  }
+  async function apiGet(){
+    let access=token() || askForToken();
+    if(!access) throw new Error('Dashboard access code is required.');
+    let data=await request(`${API}?action=bookings&token=${encodeURIComponent(access)}&_=${Date.now()}`);
+    if(data.success===false && /authorization/i.test(data.error||'')){sessionStorage.removeItem(TOKEN_KEY);access=askForToken();if(!access)throw new Error('Dashboard access code is required.');data=await request(`${API}?action=bookings&token=${encodeURIComponent(access)}&_=${Date.now()}`);}
+    if(!data.success) throw new Error(data.error||'Could not load live bookings.');
+    return data.bookings || [];
+  }
+  async function apiPost(payload){
+    const access=token() || askForToken(); if(!access) throw new Error('Dashboard access code is required.');
+    const data=await request(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...payload,dashboardToken:access})});
+    if(!data.success) throw new Error(data.error||'Operation failed.');
+    return data;
+  }
+  function normalize(b){return {id:b.bookingNumber,bookingNumber:b.bookingNumber||'',name:b.name||'Walk-in customer',phone:b.phone||'',vehicle:b.vehicle||'Vehicle',registration:String(b.registration||'').toUpperCase(),vehicleType:b.vehicleType||'other',service:b.service||'Full Wash',date:b.date||today(),time:b.time||'09:00',status:String(b.status||'requested').toLowerCase(),amount:Number(b.amount||0),notes:b.notes||'',createdAt:b.createdAt||'',updatedAt:b.updatedAt||''};}
+  function renderKpis(list){const t=today(),todayList=list.filter(b=>b.date===t),completed=todayList.filter(b=>b.status==='completed'),revenue=completed.reduce((s,b)=>s+Number(b.amount||0),0),counts={bookings:todayList.length,requested:todayList.filter(b=>b.status==='requested').length,washing:todayList.filter(b=>b.status==='washing').length,ready:todayList.filter(b=>b.status==='ready').length,completed:completed.length,revenue};$('#kpis').innerHTML=[['Bookings',counts.bookings],['Requested',counts.requested],['Washing',counts.washing],['Ready',counts.ready],['Completed',counts.completed],['Revenue',money(counts.revenue)]].map(([label,value])=>`<div class="kpi"><b>${value}</b><span>${label}</span></div>`).join('');}
+  function filtered(list){const q=($('#search').value||'').trim().toLowerCase(),dateMode=$('#dateFilter').value,status=$('#statusFilter').value;return list.filter(b=>{if(dateMode==='today'&&b.date!==today())return false;if(status!=='all'&&b.status!==status)return false;if(!q)return true;return [b.bookingNumber,b.name,b.phone,b.registration,b.vehicle,b.service,b.status].join(' ').toLowerCase().includes(q);}).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));}
+  async function render(){
+    try{
+      const list=(await apiGet()).map(normalize);renderKpis(list);const rows=filtered(list),tbody=$('#bookingRows');
+      if(!rows.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty"><b>No live bookings yet.</b>Your Google Workspace backend is connected. New customer bookings will appear here automatically.</div></td></tr>';return;}
+      tbody.innerHTML=rows.map(b=>{const next=nextStatus[b.status],action=next?`<button data-action="${next}" data-id="${escapeHtml(b.id)}">${statusLabels[next]}</button>`:'',cancel=['completed','cancelled','no_show'].includes(b.status)?'':`<button data-action="cancelled" data-id="${escapeHtml(b.id)}">CANCEL</button>`,noShow=['completed','cancelled','no_show'].includes(b.status)?'':`<button data-action="no_show" data-id="${escapeHtml(b.id)}">NO-SHOW</button>`,isNew=b.status==='requested',created=new Date(b.createdAt),createdText=Number.isNaN(created.getTime())?'':created.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});return `<tr class="${isNew?'new-booking-row':''}"><td><span class="booking-no">${escapeHtml(b.bookingNumber)}</span>${isNew?' <span class="new-badge">NEW</span>':''}<br><span class="muted">Received ${escapeHtml(createdText)}</span></td><td><b>${escapeHtml(b.name)}</b><br><span class="muted">${escapeHtml(b.phone)}</span></td><td><span class="vehicle">${escapeHtml(b.vehicle)}</span><br><span class="muted">${escapeHtml(b.registration)}</span></td><td>${escapeHtml(b.service)}</td><td>${escapeHtml(b.date)}<br><b>${escapeHtml(b.time)}</b></td><td><span class="status ${escapeHtml(b.status)}">${statusLabels[b.status]||b.status.toUpperCase()}</span></td><td>${money(b.amount)}</td><td><div class="actions">${action}${cancel}${noShow}</div></td></tr>`;}).join('');
+    }catch(err){
+      $('#kpis').innerHTML='';$('#bookingRows').innerHTML=`<tr><td colspan="8"><div class="empty"><b>Connect the operations dashboard</b>${escapeHtml(err.message)}<br><button class="btn primary" id="authorizeBtn" style="margin-top:12px">Enter access code</button></div></td></tr>`;
+      const btn=$('#authorizeBtn');if(btn)btn.addEventListener('click',()=>{sessionStorage.removeItem(TOKEN_KEY);render();});
+    }
+  }
+  async function changeStatus(id,status){try{await apiPost({action:'updateStatus',bookingNumber:id,status});toast(`${id} → ${statusLabels[status]}`);await render();}catch(err){toast(err.message);}}
   function openModal(open){$('#modalBackdrop').classList.toggle('open',open);$('#modalBackdrop').setAttribute('aria-hidden',String(!open));if(open){$('#wDate').value=today();$('#wDate').min=today();setTimeout(()=>$('#wName').focus(),50);}}
-  $('#bookingRows').addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b)changeStatus(b.dataset.id,b.dataset.action);});
+  $('#bookingRows').addEventListener('click',e=>{const btn=e.target.closest('button[data-action]');if(btn)changeStatus(btn.dataset.id,btn.dataset.action);});
   ['search','dateFilter','statusFilter'].forEach(id=>$('#'+id).addEventListener('input',render));
   $('#refresh').addEventListener('click',render);$('#addBooking').addEventListener('click',()=>openModal(true));$('#cancelModal').addEventListener('click',()=>openModal(false));$('#modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop')openModal(false);});
-  $('#walkInForm').addEventListener('submit',async e=>{e.preventDefault();const service=$('#wService').value,d=$('#wDate').value,t=$('#wTime').value,bookingNumber=`BB-${d.replace(/-/g,'')}-${Math.random().toString(16).slice(2,8).toUpperCase()}`;const booking=normalize({id:bookingNumber,bookingNumber,name:$('#wName').value.trim(),phone:$('#wPhone').value.trim(),vehicle:$('#wVehicle').value.trim(),registration:$('#wReg').value.trim().toUpperCase(),vehicleType:$('#wType').value,service,date:d,time:t,status:'checked_in',amount:prices[service]||0,notes:$('#wNotes').value.trim(),createdAt:new Date().toISOString()});const items=list();items.unshift(booking);save(items);if(apiUrl){try{await postStatus(booking.bookingNumber,'checked_in');}catch(_){} }e.target.reset();openModal(false);$('#wDate').value=today();toast(`${bookingNumber} added and checked in`);render();});
-  $('#clearData').addEventListener('click',()=>{if(!confirm('Clear all local MVP booking data from this device? This does not delete the Google Sheet.'))return;localStorage.removeItem(KEY);render();toast('Local test data cleared');});
-  $('#print').addEventListener('click',()=>window.print());document.addEventListener('keydown',e=>{if(e.key==='Escape')openModal(false);});window.addEventListener('storage',e=>{if(e.key===KEY)render();});window.addEventListener('focus',render);setInterval(render,1000);
-  const mode=$('.mode');if(mode){mode.innerHTML=sheetUrl?`<b>Google Workspace operations</b><span>The Google Sheet is the authoritative operations record.</span><p style="margin:8px 0 0"><a class="btn primary" href="${esc(sheetUrl)}" target="_blank" rel="noopener">Open operations sheet →</a></p>`:`<b>Google Workspace operations</b><span>Bookings are written to Google Sheets once the Apps Script URL is configured.</span>`;}
-  render();
+  $('#walkInForm').addEventListener('submit',async e=>{e.preventDefault();const serviceId=$('#wService').value;try{const result=await apiPost({action:'createWalkin',name:$('#wName').value.trim(),phone:$('#wPhone').value.trim(),vehicle:$('#wVehicle').value.trim(),registration:$('#wReg').value.trim().toUpperCase(),vehicleType:$('#wType').value,serviceId,date:$('#wDate').value,time:$('#wTime').value,notes:$('#wNotes').value.trim()});e.target.reset();openModal(false);toast(`${result.bookingNumber} added and checked in`);await render();}catch(err){toast(err.message);}});
+  $('#clearData').addEventListener('click',()=>{sessionStorage.removeItem(TOKEN_KEY);toast('Dashboard access cleared. Live Google Sheet data was not deleted.');render();});
+  $('#print').addEventListener('click',()=>window.print());document.addEventListener('keydown',e=>{if(e.key==='Escape')openModal(false);});
+  const sheetLink=$('#sheetLink');if(sheetLink&&cfg.operationsSheetUrl)sheetLink.href=cfg.operationsSheetUrl;else if(sheetLink)sheetLink.style.display='none';
+  render();setInterval(render,15000);
 })();
