@@ -14,6 +14,8 @@ window.BB_MEDIA = {
   const style = document.createElement('style');
   style.id = 'bb-master-brand';
   style.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap');
+
     :root {
       --navy: #063b4d;
       --navy2: #07586c;
@@ -32,6 +34,15 @@ window.BB_MEDIA = {
       --shadow: 0 18px 55px rgba(6,59,77,.11);
     }
 
+    /* World-class type system: expressive display face + highly legible UI face. */
+    html, body { font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
+    h1, h2, h3, .footer-slogan, .metrics b { font-family: 'Bricolage Grotesque', 'Manrope', system-ui, sans-serif !important; }
+    body { letter-spacing: -0.008em; }
+    h1, h2, h3 { letter-spacing: -0.035em; }
+    .topbar nav a { font-family: 'Manrope', system-ui, sans-serif !important; font-weight: 800 !important; letter-spacing: -0.01em; }
+    .eyebrow { font-family: 'Manrope', system-ui, sans-serif !important; font-weight: 800; }
+    .btn, button, input, select { font-family: 'Manrope', system-ui, sans-serif !important; }
+
     .topbar {
       height: 118px;
       background: #ffffff !important;
@@ -40,8 +51,12 @@ window.BB_MEDIA = {
       box-shadow: 0 4px 18px rgba(6,59,77,.07);
       backdrop-filter: none;
     }
+
+    /* Restored original customer-facing navigation. Every item has a live destination. */
     .topbar nav a { color: var(--navy) !important; }
     .topbar nav a:hover { background: rgba(7,155,183,.10); }
+    .topbar nav a.is-current { background: var(--aqua) !important; color: #fff !important; box-shadow: 0 7px 18px rgba(7,155,183,.20); }
+    .topbar nav { gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 
     /* Official master logo — 100% larger than the previous 260×90px size. */
     .brand-mark {
@@ -90,6 +105,11 @@ window.BB_MEDIA = {
     :focus-visible { outline-color: var(--aqua); }
     body.dark { --bg: #062631; --card: #0b3441; --ink: #eaf8fa; --muted: #a9c5cb; --line: #1c4b58; }
 
+    @media (max-width: 1100px) {
+      .topbar { height: 112px; }
+      .brand-mark { width: 420px; height: 150px; max-width: 38vw; }
+      .topbar nav a { padding: 9px 10px; font-size: 13px; }
+    }
     @media (max-width: 850px) {
       .topbar { height: 104px; }
       .brand-mark { width: 450px; height: 160px; max-width: 55vw; }
@@ -100,6 +120,51 @@ window.BB_MEDIA = {
     }
   `;
   document.head.appendChild(style);
+
+  function restoreOriginalMenu() {
+    const nav = document.querySelector('#mainNav');
+    if (!nav) return;
+
+    nav.innerHTML = `
+      <a href="#home">Home</a>
+      <a href="#book">Book Wash</a>
+      <a href="#membership">Monthly Plans</a>
+      <a href="#experience">Cafe Lounge</a>
+      <a href="#experience">Beauty Parlour</a>
+      <a href="#membership">My Perks</a>
+    `;
+
+    // Make each restored item work with the existing one-page application.
+    nav.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    const sections = [
+      ['home', 0],
+      ['book', 1],
+      ['membership', 2],
+      ['experience', 3],
+      ['experience', 4],
+      ['membership', 5]
+    ];
+
+    function updateActiveMenu() {
+      const y = window.scrollY + 150;
+      let current = 0;
+      sections.forEach(function (item, i) {
+        const el = document.getElementById(item[0]);
+        if (el && el.offsetTop <= y) current = i;
+      });
+      nav.querySelectorAll('a').forEach(function (a, i) {
+        a.classList.toggle('is-current', i === current);
+      });
+    }
+    window.addEventListener('scroll', updateActiveMenu, { passive: true });
+    updateActiveMenu();
+  }
 
   function enforceMasterLogo() {
     document.querySelectorAll('.brand-mark, .hero-logo img, .footer-logo img').forEach(function (img) {
@@ -114,9 +179,13 @@ window.BB_MEDIA = {
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', enforceMasterLogo, { once: true });
+    document.addEventListener('DOMContentLoaded', function () {
+      enforceMasterLogo();
+      restoreOriginalMenu();
+    }, { once: true });
   } else {
     enforceMasterLogo();
+    restoreOriginalMenu();
   }
 
   const theme = document.querySelector('meta[name="theme-color"]');
