@@ -3,8 +3,8 @@
  * Public customer writes go through doPost(). Operational data is stored in
  * Google Sheets and supporting folders are created in Google Drive.
  *
- * Public endpoint: create booking + read public service catalogue + health.
- * Customer PII is NOT exposed through a public bookings GET endpoint.
+ * Customer booking creation is public. Dashboard reads/status/walk-ins require
+ * a private dashboard access token stored in Apps Script Script Properties.
  */
 const APP = {
   name:'Bubbles & Brew', timezone:'Africa/Kampala', rootFolder:'Bubbles & Brew', spreadsheet:'Bubbles & Brew Operations',
@@ -18,22 +18,87 @@ const APP = {
     AuditLog:['Timestamp','Action','Booking Number','Actor','Details']
   }
 };
-function doGet(e){const action=String(e?.parameter?.action||'health').toLowerCase();if(action==='services')return json_(publicServices_());if(action==='health')return json_(health_());return json_({success:false,error:'Unsupported public action.'});}
-function doPost(e){try{const p=parsePost_(e),action=String(p.action||'createBooking').toLowerCase();if(action==='createbooking')return json_(createBooking_(p));if(action==='createwalkin')return json_(createBooking_(p,'checked_in'));if(action==='updatestatus')return json_(updateStatus_(p));return json_({success:false,error:'Unsupported action.'});}catch(err){console.error(err&&err.stack?err.stack:err);return json_({success:false,error:err.message||'Request failed.'});}}
 
-/** Run this ONCE from the Apps Script editor before deployment. */
+function doGet(e){
+  const action=String(e?.parameter?.action||'health').toLowerCase();
+  if(action==='services')return json_(publicServices_());
+  if(action==='health')return json_(health_());
+  if(action==='bookings'){
+    requireDashboardToken_(e?.parameter?.token||'');
+    return json_(getBookings_(e?.parameter||{}));
+  }
+  return json_({success:false,error:'Unsupported public action.'});
+}
+
+function doPost(e){
+  try{
+    const p=parsePost_(e),action=String(p.action||'createBooking').toLowerCase();
+    if(action==='createbooking')return json_(createBooking_(p));
+    if(action==='createwalkin'){requireDashboardToken_(p.dashboardToken);return json_(createBooking_(p,'checked_in'));}
+    if(action==='updatestatus'){requireDashboardToken_(p.dashboardToken);return json_(updateStatus_(p));}
+    return json_({success:false,error:'Unsupported action.'});
+  }catch(err){
+    console.error(err&&err.stack?err.stack:err);
+    return json_({success:false,error:err.message||'Request failed.'});
+  }
+}
+
+/** Run this ONCE from the Apps Script editor. Safe to run again after code updates. */
 function setupBubblesAndBrew(){
-  const props=PropertiesService.getScriptProperties();let spreadsheetId=props.getProperty('SPREADSHEET_ID'),ss;
+  const props=PropertiesService.getScriptProperties();
+  let spreadsheetId=props.getProperty('SPREADSHEET_ID'),ss;
   if(spreadsheetId){try{ss=SpreadsheetApp.openById(spreadsheetId);}catch(_){spreadsheetId='';}}
   if(!spreadsheetId){ss=SpreadsheetApp.create(APP.spreadsheet);spreadsheetId=ss.getId();props.setProperty('SPREADSHEET_ID',spreadsheetId);}
   const root=getOrCreateFolder_(APP.rootFolder);['Bookings','Customers','Reports','Exports','Marketing'].forEach(name=>getOrCreateFolder_(name,root));
   props.setProperty('ROOT_FOLDER_ID',root.getId());props.setProperty('SPREADSHEET_URL',ss.getUrl());
-  Object.keys(APP.headers).forEach(name=>ensureSheet_(ss,name,APP.headers[name]));seedServices_(ss);
-  const bookings=ss.getSheetByName('Bookings');if(bookings){bookings.setFrozenRows(1);bookings.getRange(1,1,1,APP.headers.Bookings.length).setFontWeight('bold');bookings.autoResizeColumns(1,APP.headers.Bookings.length);}
-  return {success:true,spreadsheetId,spreadsheetUrl:ss.getUrl(),rootFolderId:root.getId(),rootFolderUrl:root.getUrl()};
+  let dashboardToken=props.getProperty('DASHBOARD_TOKEN');
+  if(!dashboardToken){dashboardToken=Utilities.getUuid().replace(/-/g,'')+'-'+Utilities.getUuid().replace(/-/g,'');props.setProperty('DASHBOARD_TOKEN',dashboardToken);}
+  Object.keys(APP.headers).forEach(name=>ensureSheet_(ss,name,APP.headers[name]));
+  seedServices_(ss);
+  const bookings=ss.getSheetByName('Bookings');
+  if(bookings){bookings.setFrozenRows(1);bookings.getRange(1,1,1,APP.headers.Bookings.length).setFontWeight('bold');bookings.autoResizeColumns(1,APP.headers.Bookings.length);}
+  Logger.log('Bubbles & Brew dashboard access code: '+dashboardToken);
+  return {success:true,spreadsheetId,spreadsheetUrl:ss.getUrl(),rootFolderId:root.getId(),rootFolderUrl:root.getUrl(),dashboardAccessCode:dashboardToken};
 }
-function health_(){const id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');if(!id)return{success:true,ready:false,message:'Run setupBubblesAndBrew() once in the Apps Script editor.'};try{const ss=SpreadsheetApp.openById(id);return{success:true,ready:true,name:ss.getName(),spreadsheetUrl:ss.getUrl()};}catch(_){return{success:false,ready:false,error:'Operations spreadsheet is not accessible.'};}}
+
+/** Run this in the Apps Script editor if you need to retrieve the dashboard code again. */
+function getDashboardAccessCode(){
+  const token=PropertiesService.getScriptProperties().getProperty('DASHBOARD_TOKEN');
+  if(!token)throw new Error('Run setupBubblesAndBrew() first.');
+  Logger.log('Bubbles & Brew dashboard access code: '+token);
+  return token;
+}
+
+function health_(){
+  const id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if(!id)return{success:true,ready:false,message:'Run setupBubblesAndBrew() once in the Apps Script editor.'};
+  try{const ss=SpreadsheetApp.openById(id);return{success:true,ready:true,name:ss.getName(),spreadsheetUrl:ss.getUrl()};}
+  catch(_){return{success:false,ready:false,error:'Operations spreadsheet is not accessible.'};}
+}
 function publicServices_(){return{success:true,services:APP.services.filter(row=>row[3]).map(row=>({id:row[0],name:row[1],price_ugx:row[2],sortOrder:row[4]}))};}
+
+function requireDashboardToken_(token){
+  const expected=PropertiesService.getScriptProperties().getProperty('DASHBOARD_TOKEN');
+  if(!expected||String(token)!==String(expected))throw new Error('Dashboard authorization required.');
+}
+
+function getBookings_(params){
+  const sheet=getSpreadsheet_(),values=sheet.getDataRange().getValues();
+  const rows=[];
+  for(let i=1;i<values.length;i++){
+    const r=values[i];
+    if(!r[0])continue;
+    rows.push({
+      bookingNumber:String(r[0]||''),createdAt:r[1] instanceof Date?r[1].toISOString():String(r[1]||''),
+      date:formatDateCell_(r[2]),time:formatTimeCell_(r[3]),name:String(r[4]||''),phone:String(r[5]||''),
+      vehicle:String(r[6]||''),registration:String(r[7]||'').toUpperCase(),vehicleType:String(r[8]||'other'),
+      service:String(r[9]||''),serviceId:String(r[10]||''),amount:Number(r[11]||0),status:String(r[12]||'requested').toLowerCase(),
+      paymentStatus:String(r[13]||''),notes:String(r[14]||''),updatedAt:r[15] instanceof Date?r[15].toISOString():String(r[15]||'')
+    });
+  }
+  rows.sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  return {success:true,bookings:rows};
+}
 
 function createBooking_(p,forcedStatus){
   validateBooking_(p);const lock=LockService.getScriptLock();lock.waitLock(15000);
@@ -64,4 +129,4 @@ function formatTimeCell_(value){return value instanceof Date?Utilities.formatDat
 function json_(data){return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);}
 function ensureSheet_(ss,name,headers){let sheet=ss.getSheetByName(name);if(!sheet)sheet=ss.insertSheet(name);if(sheet.getLastRow()===0)sheet.getRange(1,1,1,headers.length).setValues([headers]);return sheet;}
 function seedServices_(ss){const sheet=ss.getSheetByName('Services');if(!sheet||sheet.getLastRow()>1)return;sheet.getRange(2,1,APP.services.length,APP.services[0].length).setValues(APP.services);}
-function getOrCreateFolder_(name,parent){const iterator=parent?parent.getFoldersByName(name):DriveApp.getFoldersByName(name);if(iterator.hasNext())return iterator.next();return parent?parent.createFolder(name):DriveApp.createFolder(name);}
+function getOrCreateFolder_(name,parent){const iterator=parent?parent.parent.getFoldersByName(name):DriveApp.getFoldersByName(name);if(parent){const it=parent.getFoldersByName(name);if(it.hasNext())return it.next();return parent.createFolder(name);}if(iterator.hasNext())return iterator.next();return DriveApp.createFolder(name);}
