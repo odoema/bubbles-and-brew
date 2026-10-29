@@ -2,27 +2,20 @@
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -86,12 +79,40 @@ jobs:
           print(f"Created {target} from the official master PNG")
           PY
 
+      - name: Optimize Café Lounge hero for fast first paint
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          source = Path("assets/cafe/Bubbles & Brew Café Lounge.png")
+          target = Path("assets/cafe/cafe-lounge-hero.webp")
+          image = Image.open(source).convert("RGB")
+          image.save(target, "WEBP", quality=82, method=6)
+
+          media = Path("assets/media.js")
+          text = media.read_text(encoding="utf-8")
+          text = text.replace(
+              "/assets/cafe/Bubbles%20%26%20Brew%20Caf%C3%A9%20Lounge.png",
+              "/assets/cafe/cafe-lounge-hero.webp"
+          )
+          media.write_text(text, encoding="utf-8")
+
+          index = Path("index.html")
+          html = index.read_text(encoding="utf-8")
+          preload = '<link rel="preload" as="image" href="/assets/cafe/cafe-lounge-hero.webp" type="image/webp" fetchpriority="high">'
+          if preload not in html:
+              html = html.replace('<link rel="stylesheet" href="/css/app.css">', '<link rel="stylesheet" href="/css/app.css">\n' + preload, 1)
+          index.write_text(html, encoding="utf-8")
+          print(f"Created optimized Café Lounge image: {target}")
+          print("Updated deployment copy of media.js and preloaded the Café image from <head>")
+          PY
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
