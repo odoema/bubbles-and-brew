@@ -1,7 +1,8 @@
 # Bubbles & Brew — brand kit
 
 Slogan: **Wash, Warm and Roll**
-Descriptor (from the logo): Premium Carwash & Cafe
+
+The supplied artwork carried the line "Premium Carwash & Cafe". In `assets/logo.png` that line is replaced by the slogan, redrawn in Montserrat (bold with a medium-weight "AND") to match the original lettering. The untouched original is in `assets/brand/logo-original.png`; if you have the original font file, the line can be re-set in it.
 
 ## Palette (sampled from the logo)
 
@@ -18,6 +19,6 @@ These are defined once as CSS variables at the top of `css/app.css`.
 ## Logo files (`assets/`)
 
 - `brand/logo-original.png` — the supplied artwork, untouched
-- `logo.png` — full logo, transparent background (use on light surfaces; the footer puts it on a paper plate)
+- `logo.png` — full logo with the slogan line, transparent background (use on light surfaces; the footer puts it on a paper plate)
 - `logo-mark.png` / `logo-wordmark.png` — emblem and lettering cut from the logo for the compact header
 - `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon-48.png` — emblem on paper for browsers and the installed app
