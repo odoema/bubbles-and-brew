@@ -1,16 +1,8 @@
 // Public frontend configuration only.
-// Never put a Firebase Admin / service-account private key in this file.
+// The customer site does not contain Google credentials or private keys.
 window.BB_CONFIG = {
-  firebase: {
-    apiKey: 'AIzaSyD5rgtYhQo0XsliyVV6xcbzxgsN8LCiGR8',
-    authDomain: 'bubbles-and-brew.firebaseapp.com',
-    projectId: 'bubbles-and-brew',
-    storageBucket: 'bubbles-and-brew.firebasestorage.app',
-    messagingSenderId: '927083687727',
-    appId: '1:927083687727:web:fb6e06a69678fd6f64bbda',
-    measurementId: 'G-EY2R7E739B'
-  },
-  // Production HTTPS endpoint for the public booking function.
-  // The function itself uses Firebase Admin privileges server-side.
-  functionsBaseUrl: 'https://us-central1-bubbles-and-brew.cloudfunctions.net'
+  // Paste the deployed Google Apps Script /exec URL here after one-time setup.
+  googleAppsScriptUrl: '',
+  // Optional private operations Sheet URL for the staff dashboard shortcut.
+  operationsSheetUrl: ''
 };
