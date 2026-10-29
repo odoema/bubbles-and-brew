@@ -1,14 +1,6 @@
 (() => {
   const $ = s => document.querySelector(s);
 
-  // When a new service-worker version activates, reload once so an old cached
-  // document cannot remain underneath the newly deployed page.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', event => {
-      if (event.data?.type === 'BB_REFRESH') window.location.reload();
-    });
-  }
-
   const media = window.BB_MEDIA || {};
   const config = window.BB_CONFIG || {};
   const photoMap = { heroPhoto: media.hero, p1: media.img0, p2: media.img1, p3: media.img2 };
@@ -401,8 +393,10 @@
   $('#modal').addEventListener('click', e => {
     if (e.target.id === 'modal') $('#closeModal').click();
   });
-  if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+  // Service workers are intentionally disabled for this production site.
+  // Keeping the app network-only prevents a legacy cached homepage from
+  // competing with the current GitHub Pages deployment.
 
   loadBackendCatalogue();
 })();
