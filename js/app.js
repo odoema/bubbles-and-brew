@@ -80,12 +80,84 @@
 
   $('#themeBtn').addEventListener('click',()=>{document.body.classList.toggle('dark');localStorage.setItem('bb-theme',document.body.classList.contains('dark')?'dark':'light')});
   if(localStorage.getItem('bb-theme')==='dark') document.body.classList.add('dark');
-  $('#menuBtn').addEventListener('click',()=>{const n=$('#mainNav');n.style.display=n.style.display==='flex'?'none':'flex';n.style.position='absolute';n.style.top='70px';n.style.left='15px';n.style.right='15px';n.style.background='#082b36';n.style.padding='10px';n.style.borderRadius='14px';n.style.flexDirection='column'});
-  document.querySelectorAll('[data-book]').forEach(b=>b.addEventListener('click',()=>{ chooseService(b.dataset.book); $('#book').scrollIntoView({behavior:'smooth'}); }));
-  document.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{ chooseService('Full Wash'); $('#book').scrollIntoView({behavior:'smooth'}); $('#bName').focus(); }));
+  const nav = $('#mainNav'), menuBtn = $('#menuBtn');
+  const setMenu = open => {
+    nav.classList.toggle('open', open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    menuBtn.textContent = open ? '✕' : '☰';
+  };
+  menuBtn.addEventListener('click',()=>setMenu(!nav.classList.contains('open')));
+  nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>setMenu(false)));
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') setMenu(false); });
+  window.matchMedia('(min-width:851px)').addEventListener('change',e=>{ if(e.matches) setMenu(false); });
+
+  // ----- Booking wizard: 1 Your ride -> 2 Your slot -> 3 Confirm -----
+  const stepEls = Array.from(document.querySelectorAll('#bookingForm .step'));
+  const dots = Array.from(document.querySelectorAll('#bookingSteps li'));
+  const backBtn = $('#stepBack'), nextBtn = $('#stepNext');
+  let step = 1;
+
+  function showStep(n, opts = {}) {
+    step = n;
+    stepEls.forEach(el => { el.hidden = Number(el.dataset.step) !== n; });
+    dots.forEach((d, i) => {
+      d.classList.toggle('active', i + 1 === n);
+      d.classList.toggle('done', i + 1 < n);
+      if (i + 1 === n) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current');
+    });
+    backBtn.hidden = n === 1;
+    nextBtn.hidden = n === 3;
+    $('#stepSubmit').hidden = n !== 3;
+    if (n === 3) fillSummary();
+    if (opts.scroll !== false) {
+      const form = $('#bookingForm');
+      if (form.getBoundingClientRect().top < 0) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function fillSummary() {
+    const when = $('#bDate').value
+      ? new Date($('#bDate').value + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + $('#bTime').value
+      : '';
+    const values = {
+      service: $('#bService').selectedOptions[0]?.dataset?.name || $('#bService').value.split(' — ')[0],
+      when,
+      vehicle: $('#bVehicle').value.trim(),
+      registration: $('#bRegistration').value.trim().toUpperCase(),
+      vehicleType: $('#bVehicleType').selectedOptions[0]?.textContent || '',
+      name: $('#bName').value.trim(),
+      phone: $('#bPhone').value.trim()
+    };
+    document.querySelectorAll('[data-sum]').forEach(el => { el.textContent = values[el.dataset.sum] || ''; });
+  }
+
+  function validateStep(n) {
+    const fields = stepEls[n - 1].querySelectorAll('input,select');
+    for (const f of fields) { if (!f.checkValidity()) { f.reportValidity(); return false; } }
+    return true;
+  }
+
+  nextBtn.addEventListener('click', () => {
+    if (!validateStep(step)) return;
+    setBookingMessage('', true);
+    showStep(Math.min(step + 1, 3));
+  });
+  backBtn.addEventListener('click', () => { setBookingMessage('', true); showStep(Math.max(step - 1, 1)); });
+
+  document.querySelectorAll('[data-book]').forEach(b=>b.addEventListener('click',()=>{ chooseService(b.dataset.book); showStep(1,{scroll:false}); $('#book').scrollIntoView({behavior:'smooth'}); }));
+  document.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{ chooseService('Full Wash'); showStep(1,{scroll:false}); $('#book').scrollIntoView({behavior:'smooth'}); $('#bVehicle').focus({preventScroll:true}); }));
 
   $('#bookingForm').addEventListener('submit', async e=>{
     e.preventDefault();
+    if (step < 3) { nextBtn.click(); return; }
+    for (let n = 1; n <= 2; n++) {
+      if (!Array.from(stepEls[n - 1].querySelectorAll('input,select')).every(f => f.checkValidity())) {
+        showStep(n);
+        validateStep(n);
+        return;
+      }
+    }
     const submit = e.target.querySelector('button[type="submit"]');
     submit.disabled = true;
     submit.textContent = 'Creating booking…';
@@ -116,6 +188,8 @@
       }
       e.target.reset();
       $('#bDate').min=date.toISOString().slice(0,10);
+      showStep(1,{scroll:false});
+      $('#bookingResult').scrollIntoView({behavior:'smooth',block:'nearest'});
     } catch (error) {
       setBookingMessage(error.message || 'Booking failed. Please try again.', false);
     } finally {
