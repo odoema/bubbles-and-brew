@@ -10,6 +10,7 @@ window.BB_CONFIG = {
     appId: '1:927083687727:web:fb6e06a69678fd6f64bbda',
     measurementId: 'G-EY2R7E739B'
   },
-  // Set after: firebase deploy --only functions:createPublicBooking
-  functionsBaseUrl: ''
+  // Production HTTPS endpoint for the public booking function.
+  // The function itself uses Firebase Admin privileges server-side.
+  functionsBaseUrl: 'https://us-central1-bubbles-and-brew.cloudfunctions.net'
 };
