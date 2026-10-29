@@ -140,8 +140,8 @@ jobs:
           index = Path("index.html")
           html = index.read_text(encoding="utf-8")
           pattern = re.compile(
-              r"document\\.documentElement\\.classList\\.remove\\('bb-loading'\\);\\s*"
-              r"document\\.body\\.classList\\.remove\\('bb-loading'\\);",
+              r"document\.documentElement\.classList\.remove\('bb-loading'\);\s*"
+              r"document\.body\.classList\.remove\('bb-loading'\);",
               re.MULTILINE,
           )
           replacement = """(function () {
