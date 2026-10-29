@@ -224,13 +224,19 @@ jobs:
           index = Path("index.html")
           html = index.read_text(encoding="utf-8")
           marker = "</body>"
-          tag = '<script src="/js/expo-firestore-booking.js"></script>'
-          if tag not in html:
+          tags = '''<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+          <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+          <script src="/js/config.js"></script>
+          <script src="/js/expo-firestore-booking.js"></script>'''
+          if "/js/expo-firestore-booking.js" not in html:
               if marker not in html:
                   raise SystemExit("Closing body tag not found; refusing to deploy without the Firestore booking backend.")
-              html = html.replace(marker, tag + "\n" + marker, 1)
+              html = html.replace(marker, tags + "\n" + marker, 1)
+          else:
+              old = '<script src="/js/expo-firestore-booking.js"></script>'
+              html = html.replace(old, tags, 1)
           index.write_text(html, encoding="utf-8")
-          print("Installed the zero-cost direct Firestore booking backend")
+          print("Installed Firebase Web SDK + public config + zero-cost direct Firestore booking backend")
           PY
 
       - name: Setup Pages
