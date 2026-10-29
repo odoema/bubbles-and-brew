@@ -1,6 +1,16 @@
 // Public frontend configuration only.
-// Never put a Supabase service-role key or other secret in this file.
+// Never put a Firebase Admin / service-account private key in this file.
+// Fill these values from Firebase Console → Project settings → Your apps → Web app.
 window.BB_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: 'bubbles-and-brew',
+    storageBucket: '',
+    messagingSenderId: '',
+    appId: ''
+  },
+  // Optional: Cloud Function base URL after deploy, e.g.
+  // https://us-central1-bubbles-and-brew.cloudfunctions.net
+  functionsBaseUrl: ''
 };
