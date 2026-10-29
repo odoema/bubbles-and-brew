@@ -73,8 +73,15 @@ html.bb-loading #app{visibility:hidden}
 <script src="/js/config.js"></script>
 <script src="/js/app.js"></script>
 <script>
-/* Reveal only after the current homepage has been enhanced; never expose the legacy static layer first. */
-document.documentElement.classList.remove('bb-loading');
-document.body.classList.remove('bb-loading');
+/* Keep the legacy static DOM hidden until media.js has completed its DOMContentLoaded enhancement. */
+const revealBubblesAndBrew = () => {
+  document.documentElement.classList.remove('bb-loading');
+  document.body.classList.remove('bb-loading');
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', revealBubblesAndBrew, { once:true });
+} else {
+  revealBubblesAndBrew();
+}
 </script>
 </body></html>
