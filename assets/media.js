@@ -63,11 +63,43 @@ window.BB_MEDIA = {
       overflow: visible;
     }
 
-    /* Restored original customer-facing navigation. Every item has a live destination. */
+    /* Restore the original customer-facing navigation. */
     .topbar nav a { color: var(--navy) !important; }
     .topbar nav a:hover { background: rgba(7,155,183,.10); }
     .topbar nav a.is-current { background: var(--aqua) !important; color: #fff !important; box-shadow: 0 7px 18px rgba(7,155,183,.20); }
     .topbar nav { gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* Make the two existing header controls unmistakably visible. */
+    .icon-btn, .menu-btn {
+      display: grid !important;
+      place-items: center !important;
+      width: 44px !important;
+      height: 44px !important;
+      min-width: 44px;
+      padding: 0 !important;
+      border: 1px solid #cfe1e5 !important;
+      border-radius: 12px !important;
+      background: #ffffff !important;
+      color: var(--navy) !important;
+      font-size: 0 !important;
+      line-height: 1 !important;
+      box-shadow: 0 3px 12px rgba(6,59,77,.05);
+    }
+    #themeBtn::before {
+      content: '◐';
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    #menuBtn::before {
+      content: '☰';
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    #menuBtn[aria-expanded="true"]::before { content: '×'; font-size: 27px; }
+    .icon-btn:hover, .menu-btn:hover { background: #f3fbfc !important; border-color: var(--aqua) !important; }
+    @media (min-width: 851px) { .menu-btn { display: none !important; } }
 
     /* Official master logo — 100% larger than the previous 260×90px size. */
     .brand-mark {
@@ -94,7 +126,12 @@ window.BB_MEDIA = {
       filter: drop-shadow(0 3px 5px rgba(6,59,77,.16));
       transform: translateZ(0);
     }
-    .footer-logo { background: transparent !important; }
+    /* The footer deliberately uses a clean white panel, matching the white of the source artwork. */
+    .footer-logo {
+      background: #ffffff !important;
+      border-radius: 18px;
+      padding: 14px 22px;
+    }
 
     .hero h1 { color: var(--navy); }
     .hero h1 em { color: var(--brown); }
@@ -124,6 +161,7 @@ window.BB_MEDIA = {
     @media (max-width: 850px) {
       .topbar { height: 124px; padding: 7px 14px; }
       .brand-mark { width: 450px; height: 160px; max-width: 55vw; }
+      .topbar nav.open { z-index: 50; }
     }
     @media (max-width: 520px) {
       .topbar { height: 112px; padding: 6px 10px; }
@@ -140,16 +178,27 @@ window.BB_MEDIA = {
       <a href="#home">Home</a>
       <a href="#book">Book Wash</a>
       <a href="#membership">Monthly Plans</a>
-      <a href="#experience">Cafe Lounge</a>
-      <a href="#experience">Beauty Parlour</a>
+      <a href="#cafe">Cafe Lounge</a>
+      <a href="#beauty">Beauty Parlour</a>
       <a href="#membership">My Perks</a>
     `;
 
-    // Make each restored item work with the existing one-page application.
+    // Give the two experience items precise destinations inside the existing section.
+    const experienceItems = document.querySelectorAll('#experience .experience-list > div');
+    if (experienceItems[0]) experienceItems[0].id = 'cafe';
+    if (experienceItems[2]) experienceItems[2].id = 'beauty';
+
+    // Make every restored item work and close the mobile menu after selection.
     nav.querySelectorAll('a').forEach(function (link) {
       link.addEventListener('click', function () {
         const target = document.querySelector(link.getAttribute('href'));
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nav.classList.remove('open');
+        const menuBtn = document.querySelector('#menuBtn');
+        if (menuBtn) {
+          menuBtn.setAttribute('aria-expanded', 'false');
+          menuBtn.setAttribute('aria-label', 'Open menu');
+        }
       });
     });
 
