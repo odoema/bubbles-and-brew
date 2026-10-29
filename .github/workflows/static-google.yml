@@ -78,6 +78,11 @@ jobs:
           html = html.replace('<script src="/js/expo-firestore-booking.js"></script>', '')
           html = html.replace('Firebase project is connected, the same form will submit through a secure Cloud Function.', 'Google Workspace is connected, the same form will write directly to the Bubbles & Brew operations Google Sheet.')
           html = html.replace('Once the Bubbles & Brew Firebase project is connected, the same form will submit through a secure Cloud Function.', 'Once Google Workspace is connected, the same form writes to the Bubbles & Brew operations Google Sheet.')
+
+          # The cinematic slider is the ONLY homepage hero presentation.
+          # Remove the legacy static hero contents so it can never compete with the slider.
+          html = re.sub(r'<section id="home" class="hero">.*?</section>', '<section id="home" class="hero"></section>', html, count=1, flags=re.S)
+
           pattern = re.compile(r"document\.documentElement\.classList\.remove\('bb-loading'\);\s*document\.body\.classList\.remove\('bb-loading'\);", re.MULTILINE)
           replacement = """(function () {
             function revealHomepage() {
@@ -89,10 +94,14 @@ jobs:
           })();"""
           html, count = pattern.subn(replacement, html, count=1)
           if count != 1: raise SystemExit('Homepage reveal guard not found.')
+
           version = os.environ.get('DEPLOY_SHA', 'dev')[:12]
           html = html.replace('<script src="/js/config.js"></script>', f'<script src="/js/config.js?v={version}"></script>')
           html = html.replace('<script src="/js/app-google.js"></script>', f'<script src="/js/app-google.js?v={version}"></script>')
-          html = html.replace('<script src="/assets/hero-slider.js"></script>', f'<script src="/assets/hero-slider.js?v={version}"></script>')
+
+          # Remove any source slider tag and load exactly one fresh slider script at the end of body.
+          html = re.sub(r'<script src="/assets/hero-slider\.js(?:\?[^\"]*)?"></script>\s*', '', html)
+          html = html.replace('</body>', f'<script src="/assets/hero-slider.js?v={version}"></script>\n</body>', 1)
           index.write_text(html, encoding="utf-8")
 
           dashboard = Path("dashboard.html")
