@@ -34,7 +34,7 @@ window.BB_MEDIA = {
 
     /* Clean white header: it intentionally matches the light logo background. */
     .topbar {
-      height: 92px;
+      height: 100px;
       background: #ffffff !important;
       color: var(--navy);
       border-bottom: 1px solid #dce8eb;
@@ -47,8 +47,8 @@ window.BB_MEDIA = {
     /* The official master logo is used everywhere; no cropped or alternate logo. */
     .brand-mark {
       content: url('${MASTER_LOGO}');
-      width: 220px;
-      height: 82px;
+      width: 260px;
+      height: 90px;
       display: block;
       object-fit: contain;
       object-position: center;
@@ -91,12 +91,12 @@ window.BB_MEDIA = {
     body.dark { --bg: #062631; --card: #0b3441; --ink: #eaf8fa; --muted: #a9c5cb; --line: #1c4b58; }
 
     @media (max-width: 850px) {
-      .topbar { height: 82px; }
-      .brand-mark { width: 190px; height: 72px; }
+      .topbar { height: 88px; }
+      .brand-mark { width: 225px; height: 80px; }
     }
     @media (max-width: 520px) {
-      .topbar { height: 76px; }
-      .brand-mark { width: 168px; height: 64px; }
+      .topbar { height: 80px; }
+      .brand-mark { width: 195px; height: 70px; }
     }
   `;
   document.head.appendChild(style);
