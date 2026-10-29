@@ -108,6 +108,28 @@ jobs:
           print("Updated deployment copy of media.js and preloaded the Café image from <head>")
           PY
 
+      - name: Optimize Beauty Parlour hero for fast loading
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          source = Path("assets/Bubbles&Brew_Beauty_Parlour_Lounge.png")
+          target = Path("assets/beauty-parlour-hero.webp")
+          image = Image.open(source).convert("RGB")
+          image.save(target, "WEBP", quality=82, method=6)
+
+          media = Path("assets/media.js")
+          text = media.read_text(encoding="utf-8")
+          text = text.replace(
+              "/assets/Bubbles%26Brew_Beauty_Parlour_Lounge.png",
+              "/assets/beauty-parlour-hero.webp"
+          )
+          media.write_text(text, encoding="utf-8")
+          print(f"Created optimized Beauty Parlour image: {target}")
+          print("Updated deployment copy of media.js to use the optimized Beauty image")
+          PY
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
