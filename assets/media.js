@@ -1,14 +1,4 @@
 // Bubbles & Brew — media and brand source of truth
-(function purgeLegacyServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  try { navigator.serviceWorker.register = () => Promise.reject(new Error('Legacy service worker disabled')); } catch (_) {}
-  if (sessionStorage.getItem('bb-sw-purged-v1')) return;
-  sessionStorage.setItem('bb-sw-purged-v1', '1');
-  Promise.all([
-    navigator.serviceWorker.getRegistrations().then(regs => Promise.all(regs.map(r => r.unregister()))),
-    'caches' in window ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))) : Promise.resolve()
-  ]).finally(() => window.location.reload());
-})();
 
 window.BB_MEDIA = { hero:'/assets/hero.jpg', img0:'/assets/img0.jpg', img1:'/assets/img1.jpg', img2:'/assets/img2.jpg' };
 (function () {
