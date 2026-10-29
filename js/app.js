@@ -1,5 +1,14 @@
 (() => {
   const $ = s => document.querySelector(s);
+
+  // When a new service-worker version activates, reload once so an old cached
+  // document cannot remain underneath the newly deployed page.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'BB_REFRESH') window.location.reload();
+    });
+  }
+
   const media = window.BB_MEDIA || {};
   const config = window.BB_CONFIG || {};
   const photoMap = { heroPhoto: media.hero, p1: media.img0, p2: media.img1, p3: media.img2 };
@@ -28,7 +37,7 @@
   function chooseService(name) {
     const select = $('#bService');
     const option = Array.from(select.options).find(
-      o => (o.dataset.name || o.value) === name || o.textContent.split(' \u2014 ')[0] === name
+      o => (o.dataset.name || o.value) === name || o.textContent.split(' — ')[0] === name
     );
     if (option) select.value = option.value;
   }
@@ -76,7 +85,7 @@
         select.innerHTML = services
           .map(
             s =>
-              `<option value="${s.id}" data-name="${s.name}">${s.name} \u2014 UGX ${Number(
+              `<option value="${s.id}" data-name="${s.name}">${s.name} — UGX ${Number(
                 s.price_ugx
               ).toLocaleString()}</option>`
           )
@@ -202,7 +211,7 @@
     nav.classList.toggle('open', open);
     menuBtn.setAttribute('aria-expanded', String(open));
     menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-    menuBtn.textContent = open ? '\u2715' : '\u2630';
+    menuBtn.textContent = open ? '✕' : '☰';
   };
   menuBtn.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
   nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
@@ -248,13 +257,13 @@
           day: 'numeric',
           month: 'short'
         }) +
-        ' \u00b7 ' +
+        ' · ' +
         $('#bTime').value
       : '';
     const values = {
       service:
         $('#bService').selectedOptions[0]?.dataset?.name ||
-        $('#bService').value.split(' \u2014 ')[0],
+        $('#bService').value.split(' — ')[0],
       when,
       vehicle: $('#bVehicle').value.trim(),
       registration: $('#bRegistration').value.trim().toUpperCase(),
@@ -323,11 +332,11 @@
     }
     const submit = e.target.querySelector('button[type="submit"]');
     submit.disabled = true;
-    submit.textContent = 'Creating booking\u2026';
+    submit.textContent = 'Creating booking…';
 
     const serviceName =
       $('#bService').selectedOptions[0]?.dataset?.name ||
-      $('#bService').value.split(' \u2014 ')[0];
+      $('#bService').value.split(' — ')[0];
     const payload = {
       name: $('#bName').value.trim(),
       phone: $('#bPhone').value.trim(),
@@ -377,7 +386,7 @@
       setBookingMessage(error.message || 'Booking failed. Please try again.', false);
     } finally {
       submit.disabled = false;
-      submit.innerHTML = 'Create booking <span>\u2192</span>';
+      submit.innerHTML = 'Create booking <span>→</span>';
     }
   });
 
