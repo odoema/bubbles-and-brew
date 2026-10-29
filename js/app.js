@@ -33,6 +33,10 @@
     if (option) select.value = option.value;
   }
 
+  function randomSuffix() {
+    return Math.random().toString(16).slice(2, 8).toUpperCase();
+  }
+
   async function initFirebase() {
     if (!backendReady || typeof firebase === 'undefined') return false;
     try {
@@ -82,7 +86,7 @@
       const note = document.querySelector('.booking-note span');
       if (note) {
         note.textContent =
-          'Connected to the Bubbles & Brew Firebase backend. Booking requests are validated server-side before entering the operations queue.';
+          'Connected to Firebase. Bookings are saved to the Bubbles & Brew operations queue.';
       }
       const heading = document.querySelector('.booking-note b');
       if (heading) heading.textContent = 'Live booking mode';
@@ -127,9 +131,60 @@
       return await res.json();
     }
 
-    throw new Error(
-      'Cloud Function URL is not configured. Set functionsBaseUrl in js/config.js after deploying createPublicBooking.'
-    );
+    if (!db) throw new Error('Firebase is not initialised');
+
+    const phone = String(payload.phone || '').replace(/[^0-9+]/g, '');
+    const registrationNo = String(payload.registration || '').trim().toUpperCase();
+    const priceUgx = Number(service.price_ugx) || 0;
+    const bookingNumber =
+      'BB-' + String(payload.date).replace(/-/g, '') + '-' + randomSuffix();
+
+    const customerRef = await db.collection('customers').add({
+      fullName: payload.name.trim(),
+      phone,
+      email: payload.email || null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    const vehicleRef = await db.collection('vehicles').add({
+      customerId: customerRef.id,
+      registrationNo,
+      vehicleType: payload.vehicleType || 'other',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    const bookingRef = await db.collection('bookings').add({
+      bookingNumber,
+      customerId: customerRef.id,
+      vehicleId: vehicleRef.id,
+      serviceId: service.id,
+      bayId: null,
+      scheduledDate: payload.date,
+      scheduledTime: payload.time,
+      status: 'requested',
+      paymentStatus: 'unpaid',
+      quotedAmountUgx: priceUgx,
+      notes: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      completedAt: null
+    });
+
+    await db.collection('bookingStatusHistory').add({
+      bookingId: bookingRef.id,
+      oldStatus: null,
+      newStatus: 'requested',
+      note: 'Public booking request received',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    return {
+      bookingId: bookingRef.id,
+      bookingNumber,
+      status: 'requested',
+      quotedAmountUgx: priceUgx
+    };
   }
 
   $('#themeBtn').addEventListener('click', () => {
