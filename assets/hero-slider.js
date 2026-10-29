@@ -1,213 +1,42 @@
-/* Bubbles & Brew — full hero scene slider
-   Entire hero composition slides horizontally. Booking/app logic remains untouched. */
+/* Bubbles & Brew — cinematic full-bleed hero
+   One powerful image fills the entire hero. HTML controls remain functional.
+   Brand: car wash first, café as the warm experience. */
 (function () {
+  const heroImage = 'DATA_URL_PLACEHOLDER';
   const slides = [
-    {
-      image: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=1800&q=85',
-      kicker: 'THE MAIN EVENT',
-      title: 'Your car deserves a proper wash.',
-      text: 'Professional vehicle care with a clean finish, a clear process and less waiting around.',
-      accent: '#0090B0',
-      cta: 'Book a wash'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1800&q=85',
-      kicker: 'DRIVE IN WITH CONFIDENCE',
-      title: 'Clean car. Fresh start. Ready to roll.',
-      text: 'Choose the right level of vehicle care for your day — from a simple refresh to premium attention.',
-      accent: '#006080',
-      cta: 'Explore services'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1800&q=85',
-      kicker: 'PREMIUM VEHICLE CARE',
-      title: 'More than a wash.',
-      text: 'A polished vehicle-care experience built around quality, convenience and a better handover.',
-      accent: '#0090B0',
-      cta: 'Book premium care'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1800&q=85',
-      kicker: 'THE WARM EXPERIENCE',
-      title: 'Wash your car. Warm up with coffee.',
-      text: 'While your vehicle is being cared for, enjoy coffee, food and a comfortable place to wait.',
-      accent: '#903000',
-      cta: 'See the experience'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1525609004556-c46c7dcfb6b3?auto=format&fit=crop&w=1800&q=85',
-      kicker: 'BUBBLES & BREW',
-      title: 'Wash. Warm. Roll.',
-      text: 'Come for professional car care. Make the wait enjoyable. Roll out refreshed and ready.',
-      accent: '#006080',
-      cta: 'Start your booking'
-    }
+    {image: heroImage,kicker:'PROFESSIONAL VEHICLE CARE',title:'Your car deserves <em>a proper wash.</em>',text:'Premium car wash. Fresh coffee. A better day.',cta:'Book a Wash',secondary:'Explore Services',accent:'#0090B0',badge:'CAR WASH FIRST'},
+    {image:'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=1800&q=85',kicker:'THE MAIN EVENT',title:'Clean car. <em>Fresh start.</em>',text:'Professional vehicle care with a clean finish and less waiting around.',cta:'Book a Wash',secondary:'Our Services',accent:'#0090B0',badge:'CLEAN · CONFIDENT · READY'},
+    {image:'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1800&q=85',kicker:'DRIVE IN WITH CONFIDENCE',title:'More than <em>a wash.</em>',text:'A polished vehicle-care experience built around quality and convenience.',cta:'Book Premium Care',secondary:'View Services',accent:'#006080',badge:'PREMIUM VEHICLE CARE'},
+    {image:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1800&q=85',kicker:'THE WARM EXPERIENCE',title:'Wash your car. <em>Warm up.</em>',text:'Enjoy coffee, food and a comfortable place to wait while we care for your vehicle.',cta:'See the Café',secondary:'Book a Wash',accent:'#903000',badge:'WASH · WARM · ROLL'},
+    {image:'https://images.unsplash.com/photo-1525609004556-c46c7dcfb6b3?auto=format&fit=crop&w=1800&q=85',kicker:'BUBBLES & BREW',title:'Wash. Warm. <em>Roll.</em>',text:'Come for professional car care. Make the wait enjoyable. Roll out refreshed.',cta:'Start Your Booking',secondary:'Explore',accent:'#006080',badge:'WASH, WARM AND ROLL'}
   ];
-
-  const MASTER_LOGO = '/assets/Bubbles%20%26%20Brew%20Carwash%20Cafe%20Logo.png';
-
-  function injectStyles() {
-    if (document.getElementById('bb-full-hero-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'bb-full-hero-styles';
-    style.textContent = `
-      .hero.bb-full-hero{position:relative;display:block;min-height:clamp(560px,72vh,760px);overflow:hidden;background:#003040}
-      .bb-hero-track{display:flex;width:500%;height:100%;min-height:inherit;transform:translate3d(0,0,0);transition:transform .85s cubic-bezier(.65,0,.2,1);will-change:transform}
-      .bb-hero-scene{position:relative;flex:0 0 20%;min-height:inherit;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);background:#fbfbf8;overflow:hidden}
-      .bb-hero-scene::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(0,48,64,.035),transparent 45%,rgba(0,144,176,.06));z-index:0}
-      .bb-hero-copy{position:relative;z-index:3;display:flex;flex-direction:column;justify-content:center;padding:52px clamp(24px,5vw,76px) 62px;background:#fbfbf8}
-      .bb-hero-logo{width:min(280px,70%);height:auto;display:block;margin-bottom:24px;object-fit:contain;object-position:left center}
-      .bb-hero-kicker{display:inline-flex;align-items:center;gap:8px;width:max-content;max-width:100%;padding:7px 11px;border-radius:999px;background:var(--bb-accent);color:#fff;font-size:10px;font-weight:900;letter-spacing:.14em;line-height:1.2}
-      .bb-hero-copy h1{margin:18px 0 12px;max-width:640px;color:#003040;font-size:clamp(2.5rem,5.3vw,5.15rem);line-height:.96;letter-spacing:-.045em}
-      .bb-hero-copy h1 em{font-style:normal;color:#0090B0}
-      .bb-hero-copy p{max-width:590px;margin:0;color:#49636b;font-size:clamp(1rem,1.5vw,1.18rem);line-height:1.6}
-      .bb-hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:26px}
-      .bb-hero-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:999px;padding:13px 19px;font-weight:900;text-decoration:none;cursor:pointer;font:inherit}
-      .bb-hero-btn.primary{background:#003040;color:#fff;box-shadow:0 10px 26px rgba(0,48,64,.18)}
-      .bb-hero-btn.secondary{background:#fff;color:#003040;border:1px solid #cbdde1}
-      .bb-hero-trust{display:flex;flex-wrap:wrap;gap:8px 11px;margin-top:22px;color:#6b7d83;font-size:11px;font-weight:700}
-      .bb-hero-trust b{color:#903000}
-      .bb-hero-image{position:relative;min-height:inherit;overflow:hidden;background:#003040}
-      .bb-hero-image img.bb-scene-photo{width:100%;height:100%;min-height:inherit;display:block;object-fit:cover}
-      .bb-hero-image::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,48,64,.18),transparent 40%,rgba(0,48,64,.12));pointer-events:none}
-      .bb-hero-badge{position:absolute;left:24px;bottom:26px;z-index:4;max-width:290px;padding:15px 17px;border-radius:16px;background:rgba(255,255,255,.94);box-shadow:0 16px 40px rgba(0,48,64,.2);backdrop-filter:blur(10px);border-left:4px solid var(--bb-accent)}
-      .bb-hero-badge strong{display:block;color:#003040;font-size:13px;margin-bottom:4px}
-      .bb-hero-badge span{display:block;color:#5d747c;font-size:11px;line-height:1.4}
-      .bb-hero-nav{position:absolute;left:clamp(24px,5vw,76px);bottom:18px;z-index:20;display:flex;align-items:center;gap:9px}
-      .bb-hero-arrow{width:40px;height:40px;border-radius:50%;border:1px solid #cbdde1;background:#fff;color:#003040;font-size:22px;line-height:1;display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 20px rgba(0,48,64,.12)}
-      .bb-hero-arrow:hover{background:#0090B0;color:#fff;border-color:#0090B0}
-      .bb-hero-dots{display:flex;align-items:center;gap:6px;padding:0 3px}
-      .bb-dot{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#b6c9ce;cursor:pointer}
-      .bb-dot.active{width:25px;border-radius:99px;background:#003040}
-      .bb-hero-count{margin-left:5px;color:#6b7d83;font-size:10px;font-weight:900;letter-spacing:.1em}
-      .bb-hero-progress{position:absolute;left:0;right:0;bottom:0;height:4px;background:#dbe9ec;z-index:21}
-      .bb-hero-progress span{display:block;height:100%;width:20%;background:#0090B0;transition:width .3s ease,background .3s ease}
-      @media(max-width:900px){
-        .hero.bb-full-hero{min-height:720px}
-        .bb-hero-scene{grid-template-columns:1fr;grid-template-rows:48% 52%}
-        .bb-hero-copy{padding:26px 22px 72px;justify-content:center}
-        .bb-hero-logo{width:210px;margin-bottom:15px}
-        .bb-hero-copy h1{font-size:clamp(2rem,8vw,3.25rem);margin:12px 0 9px}
-        .bb-hero-copy p{font-size:.94rem;line-height:1.45}
-        .bb-hero-actions{margin-top:16px}
-        .bb-hero-trust{margin-top:12px}
-        .bb-hero-image{min-height:0}
-        .bb-hero-badge{left:16px;bottom:16px}
-        .bb-hero-nav{left:22px;bottom:17px}
-      }
-      @media(max-width:520px){
-        .hero.bb-full-hero{min-height:690px}
-        .bb-hero-scene{grid-template-rows:50% 50%}
-        .bb-hero-copy{padding:20px 18px 70px}
-        .bb-hero-logo{width:175px}
-        .bb-hero-copy h1{font-size:2rem}
-        .bb-hero-copy p{font-size:.86rem}
-        .bb-hero-btn{padding:11px 15px;font-size:.85rem}
-        .bb-hero-trust{font-size:9px}
-        .bb-hero-badge{max-width:230px;padding:11px 13px}
-        .bb-hero-badge strong{font-size:11px}.bb-hero-badge span{font-size:9px}
-      }
-      @media(prefers-reduced-motion:reduce){.bb-hero-track{transition:none}.bb-hero-progress span{transition:none}}
-    `;
-    document.head.appendChild(style);
-  }
-
-  function init() {
-    const hero = document.querySelector('section.hero');
-    if (!hero || hero.dataset.bbFullHero === '1') return;
-    hero.dataset.bbFullHero = '1';
-    injectStyles();
-
-    const track = document.createElement('div');
-    track.className = 'bb-hero-track';
-
-    slides.forEach((slide, i) => {
-      const scene = document.createElement('article');
-      scene.className = 'bb-hero-scene';
-      scene.style.setProperty('--bb-accent', slide.accent);
-      scene.innerHTML = `
-        <div class="bb-hero-copy">
-          <img class="bb-hero-logo" src="${MASTER_LOGO}" alt="Bubbles & Brew — Wash, Warm and Roll">
-          <span class="bb-hero-kicker">${slide.kicker}</span>
-          <h1>${slide.title}</h1>
-          <p>${slide.text}</p>
-          <div class="bb-hero-actions">
-            <a class="bb-hero-btn primary" href="#book">${slide.cta} <span>→</span></a>
-            <a class="bb-hero-btn secondary" href="#wash">View services</a>
-          </div>
-          <div class="bb-hero-trust"><span><b>Car wash first</b></span><span>•</span><span>Professional care</span><span>•</span><span>Jinja Road · Naguru</span></div>
-        </div>
-        <div class="bb-hero-image">
-          <img class="bb-scene-photo" src="${slide.image}" alt="${slide.title}" ${i === 0 ? '' : 'loading="lazy"'}>
-          <div class="bb-hero-badge"><strong>${i === 3 ? 'A better place to wait.' : i === 4 ? 'WASH, WARM AND ROLL.' : 'Professional vehicle care.'}</strong><span>${i === 3 ? 'Coffee, food and comfort while your vehicle is being cared for.' : 'Clean process. Clear handover. Less waiting around.'}</span></div>
-        </div>`;
-      track.appendChild(scene);
-    });
-
-    const nav = document.createElement('div');
-    nav.className = 'bb-hero-nav';
-    nav.innerHTML = `<button type="button" class="bb-hero-arrow bb-prev" aria-label="Previous hero">‹</button><div class="bb-hero-dots" role="tablist" aria-label="Hero scenes"></div><button type="button" class="bb-hero-arrow bb-next" aria-label="Next hero">›</button><span class="bb-hero-count" aria-live="polite">01 / 05</span>`;
-
-    const progress = document.createElement('div');
-    progress.className = 'bb-hero-progress';
-    progress.innerHTML = '<span></span>';
-
-    hero.replaceChildren(track, nav, progress);
-
-    const dots = nav.querySelector('.bb-hero-dots');
-    const count = nav.querySelector('.bb-hero-count');
-    const progressBar = progress.querySelector('span');
-    let current = 0;
-    let timer;
-    const interval = 6500;
-
-    slides.forEach((slide, i) => {
-      const dot = document.createElement('button');
-      dot.type = 'button';
-      dot.className = 'bb-dot' + (i === 0 ? ' active' : '');
-      dot.setAttribute('role', 'tab');
-      dot.setAttribute('aria-label', `Show hero ${i + 1}`);
-      dot.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-      dot.addEventListener('click', () => { go(i); restart(); });
-      dots.appendChild(dot);
-    });
-
-    function go(next) {
-      current = (next + slides.length) % slides.length;
-      track.style.transform = `translate3d(-${current * 20}%,0,0)`;
-      nav.querySelectorAll('.bb-dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i === current);
-        dot.setAttribute('aria-selected', i === current ? 'true' : 'false');
-      });
-      count.textContent = `${String(current + 1).padStart(2, '0')} / 05`;
-      progressBar.style.width = `${(current + 1) * 20}%`;
-      progressBar.style.background = slides[current].accent;
-    }
-    function restart() {
-      clearInterval(timer);
-      timer = setInterval(() => go(current + 1), interval);
-    }
-
-    nav.querySelector('.bb-prev').addEventListener('click', () => { go(current - 1); restart(); });
-    nav.querySelector('.bb-next').addEventListener('click', () => { go(current + 1); restart(); });
-
-    let startX = 0;
-    let startY = 0;
-    hero.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; startY = e.changedTouches[0].clientY; }, {passive:true});
-    hero.addEventListener('touchend', e => {
-      const dx = e.changedTouches[0].clientX - startX;
-      const dy = e.changedTouches[0].clientY - startY;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { go(current + (dx < 0 ? 1 : -1)); restart(); }
-    }, {passive:true});
-
-    hero.addEventListener('mouseenter', () => clearInterval(timer));
-    hero.addEventListener('mouseleave', restart);
-    hero.addEventListener('focusin', () => clearInterval(timer));
-    hero.addEventListener('focusout', restart);
-    go(0);
-    restart();
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  function injectStyles(){if(document.getElementById('bb-cinematic-hero-styles'))return;const style=document.createElement('style');style.id='bb-cinematic-hero-styles';style.textContent=`
+body:has(.bb-cinematic-hero) .topbar{position:absolute!important;top:0;left:0;right:0;z-index:100;background:linear-gradient(180deg,rgba(0,48,64,.42),rgba(0,48,64,0));border-bottom:1px solid rgba(255,255,255,.10);color:#fff}
+body:has(.bb-cinematic-hero) .topbar a,body:has(.bb-cinematic-hero) .topbar .icon-btn,body:has(.bb-cinematic-hero) .topbar .menu-btn,body:has(.bb-cinematic-hero) .topbar #mainNav a{color:#fff}
+.hero.bb-cinematic-hero{position:relative!important;display:block!important;min-height:clamp(640px,88vh,860px)!important;height:100vh;overflow:hidden;background:#003040!important}
+.bb-cinematic-track{position:absolute;inset:0;display:flex;width:500%;height:100%;transition:transform .9s cubic-bezier(.65,0,.2,1);will-change:transform}
+.bb-cinematic-slide{position:relative;flex:0 0 20%;height:100%;overflow:hidden;background:#003040}
+.bb-cinematic-slide img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.bb-cinematic-slide:after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(0,48,64,.82) 0%,rgba(0,48,64,.50) 34%,rgba(0,48,64,.10) 66%,rgba(0,48,64,.24) 100%),linear-gradient(0deg,rgba(0,48,64,.42),transparent 38%)}
+.bb-cinematic-copy{position:absolute;z-index:4;left:clamp(22px,7vw,110px);top:50%;transform:translateY(-40%);width:min(650px,54vw);color:#fff}
+.bb-cinematic-kicker{display:inline-flex;padding:7px 11px;border-radius:999px;background:var(--bb-accent);color:#fff;font-size:10px;font-weight:900;letter-spacing:.15em;line-height:1.2}
+.bb-cinematic-copy h1{margin:16px 0 12px;color:#fff;font-size:clamp(3rem,6.2vw,6.5rem);line-height:.91;letter-spacing:-.055em;text-shadow:0 5px 30px rgba(0,0,0,.28)}
+.bb-cinematic-copy h1 em{font-style:normal;color:#70d7e8}
+.bb-cinematic-copy p{margin:0;max-width:600px;color:#fff;font-size:clamp(1rem,1.5vw,1.28rem);line-height:1.5;text-shadow:0 2px 15px rgba(0,0,0,.3)}
+.bb-cinematic-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:25px}
+.bb-cinematic-btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:14px 22px;border-radius:999px;text-decoration:none;font-weight:900;font:inherit;cursor:pointer}
+.bb-cinematic-btn.primary{background:#0090B0;color:#fff;border:1px solid #70d7e8;box-shadow:0 12px 30px rgba(0,48,64,.30)}
+.bb-cinematic-btn.secondary{background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.55);backdrop-filter:blur(10px)}
+.bb-cinematic-meta{display:flex;align-items:center;gap:10px;margin-top:20px;color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em}.bb-cinematic-meta b{color:#f0b35b}
+.bb-cinematic-badge{position:absolute;right:clamp(22px,5vw,72px);bottom:86px;z-index:4;padding:12px 16px;border-radius:14px;background:rgba(0,48,64,.68);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:10px;font-weight:900;letter-spacing:.14em;backdrop-filter:blur(12px)}
+.bb-cinematic-nav{position:absolute;left:clamp(22px,7vw,110px);bottom:30px;z-index:8;display:flex;align-items:center;gap:9px}
+.bb-cinematic-arrow{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.45);background:rgba(0,48,64,.55);color:#fff;font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(10px)}.bb-cinematic-arrow:hover{background:#0090B0;border-color:#0090B0}
+.bb-cinematic-dots{display:flex;align-items:center;gap:6px;padding:0 5px}.bb-cinematic-dot{width:8px;height:8px;border:0;border-radius:50%;padding:0;background:rgba(255,255,255,.45);cursor:pointer}.bb-cinematic-dot.active{width:28px;border-radius:99px;background:#fff}.bb-cinematic-count{color:#fff;font-size:10px;font-weight:900;letter-spacing:.1em;margin-left:5px}
+.bb-cinematic-progress{position:absolute;left:0;right:0;bottom:0;height:4px;z-index:9;background:rgba(255,255,255,.16)}.bb-cinematic-progress span{display:block;height:100%;width:20%;background:#0090B0;transition:width .3s ease,background .3s ease}
+@media(max-width:800px){.hero.bb-cinematic-hero{min-height:720px!important;height:88vh}.bb-cinematic-copy{left:20px;right:20px;width:auto;top:52%;transform:translateY(-38%)}.bb-cinematic-copy h1{font-size:clamp(2.7rem,12vw,4.3rem)}.bb-cinematic-copy p{font-size:.95rem}.bb-cinematic-badge{right:20px;bottom:92px;font-size:8px;padding:9px 11px}.bb-cinematic-nav{left:20px;bottom:25px}.bb-cinematic-slide img{object-position:58% center}}
+@media(max-width:520px){.hero.bb-cinematic-hero{min-height:690px!important;height:86vh}.bb-cinematic-copy{top:55%}.bb-cinematic-copy h1{font-size:2.75rem}.bb-cinematic-copy p{font-size:.86rem}.bb-cinematic-actions{margin-top:18px}.bb-cinematic-btn{padding:12px 17px;font-size:.83rem}.bb-cinematic-meta{font-size:9px;margin-top:14px}.bb-cinematic-badge{display:none}}
+@media(prefers-reduced-motion:reduce){.bb-cinematic-track{transition:none}.bb-cinematic-progress span{transition:none}}
+`;document.head.appendChild(style)}
+  function init(){const hero=document.querySelector('section.hero');if(!hero||hero.dataset.bbCinematic==='1')return;hero.dataset.bbCinematic='1';hero.classList.add('bb-cinematic-hero');injectStyles();const track=document.createElement('div');track.className='bb-cinematic-track';slides.forEach((s,i)=>{const slide=document.createElement('article');slide.className='bb-cinematic-slide';slide.style.setProperty('--bb-accent',s.accent);slide.innerHTML=`<img src="${s.image}" alt="${s.kicker} — Bubbles & Brew" ${i===0?'fetchpriority="high"':'loading="lazy"'}><div class="bb-cinematic-copy"><span class="bb-cinematic-kicker">${s.kicker}</span><h1>${s.title}</h1><p>${s.text}</p><div class="bb-cinematic-actions"><a class="bb-cinematic-btn primary" href="#book">${s.cta} <span>→</span></a><a class="bb-cinematic-btn secondary" href="#wash">${s.secondary}</a></div><div class="bb-cinematic-meta"><span><b>Car wash first</b></span><span>•</span><span>Jinja Road · Naguru</span><span>•</span><span>Wash, Warm and Roll</span></div></div><div class="bb-cinematic-badge">${s.badge}</div>`;track.appendChild(slide)});const nav=document.createElement('div');nav.className='bb-cinematic-nav';nav.innerHTML='<button class="bb-cinematic-arrow bb-c-prev" type="button" aria-label="Previous hero">‹</button><div class="bb-cinematic-dots" role="tablist"></div><button class="bb-cinematic-arrow bb-c-next" type="button" aria-label="Next hero">›</button><span class="bb-cinematic-count">01 / 05</span>';const progress=document.createElement('div');progress.className='bb-cinematic-progress';progress.innerHTML='<span></span>';hero.replaceChildren(track,nav,progress);const dots=nav.querySelector('.bb-cinematic-dots'),count=nav.querySelector('.bb-cinematic-count'),bar=progress.querySelector('span');let current=0,timer;const interval=6500;slides.forEach((_,i)=>{const dot=document.createElement('button');dot.type='button';dot.className='bb-cinematic-dot'+(i===0?' active':'');dot.setAttribute('aria-label',`Show hero ${i+1}`);dot.addEventListener('click',()=>{go(i);restart()});dots.appendChild(dot)});function go(n){current=(n+slides.length)%slides.length;track.style.transform=`translate3d(-${current*20}%,0,0)`;dots.querySelectorAll('.bb-cinematic-dot').forEach((d,i)=>d.classList.toggle('active',i===current));count.textContent=`${String(current+1).padStart(2,'0')} / 05`;bar.style.width=`${(current+1)*20}%`;bar.style.background=slides[current].accent}function restart(){clearInterval(timer);timer=setInterval(()=>go(current+1),interval)}nav.querySelector('.bb-c-prev').addEventListener('click',()=>{go(current-1);restart()});nav.querySelector('.bb-c-next').addEventListener('click',()=>{go(current+1);restart()});let sx=0,sy=0;hero.addEventListener('touchstart',e=>{sx=e.changedTouches[0].clientX;sy=e.changedTouches[0].clientY},{passive:true});hero.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){go(current+(dx<0?1:-1));restart()}},{passive:true});hero.addEventListener('mouseenter',()=>clearInterval(timer));hero.addEventListener('mouseleave',restart);hero.addEventListener('focusin',()=>clearInterval(timer));hero.addEventListener('focusout',restart);go(0);restart()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
