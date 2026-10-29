@@ -64,24 +64,22 @@
     return data;
   }
 
-  function jsonpGet(action) {
-    return new Promise((resolve, reject) => {
-      if (!apiUrl) return reject(new Error('Google Apps Script endpoint is not configured yet.'));
-      const callback = `bbJsonp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      const script = document.createElement('script');
-      const timer = setTimeout(() => { cleanup(); reject(new Error('Google backend request timed out.')); }, 10000);
-      function cleanup(){ clearTimeout(timer); delete window[callback]; script.remove(); }
-      window[callback] = data => { cleanup(); resolve(data); };
-      script.onerror = () => { cleanup(); reject(new Error('Google backend could not be reached.')); };
-      script.src = `${apiUrl}?action=${encodeURIComponent(action)}&prefix=${encodeURIComponent(callback)}`;
-      document.head.appendChild(script);
-    });
+  async function getFromGoogle(action) {
+    if (!apiUrl) throw new Error('Google Apps Script endpoint is not configured yet.');
+    const url = new URL(apiUrl);
+    url.searchParams.set('action', action);
+    url.searchParams.set('_t', Date.now());
+    const response = await fetch(url.toString(), { method:'GET', redirect:'follow', cache:'no-store' });
+    const text = await response.text();
+    let data; try { data = JSON.parse(text); } catch (_) { throw new Error('The Google backend returned an unexpected response.'); }
+    if (!data.success) throw new Error(data.error || 'Google backend rejected the request.');
+    return data;
   }
 
   async function loadCatalogue() {
     if (!apiUrl) { populateServices(fallbackServices); updateBackendNote(false); return; }
     try {
-      const result = await jsonpGet('services');
+      const result = await getFromGoogle('services');
       if (result.success && Array.isArray(result.services) && result.services.length) { populateServices(result.services); updateBackendNote(true); }
       else { populateServices(fallbackServices); updateBackendNote(false); }
     } catch (err) { console.warn('Google catalogue unavailable', err); populateServices(fallbackServices); updateBackendNote(false); }
