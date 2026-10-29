@@ -1,0 +1,110 @@
+# Bubbles & Brew — GitHub Pages deployment
+# The live booking architecture is Google Workspace, not Firebase.
+name: Deploy Bubbles & Brew to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare deployment artifact
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import re
+          from collections import deque
+
+          # Official logo optimization used by the existing site.
+          source = Path("assets/Bubbles & Brew Carwash Cafe Logo.png")
+          target = Path("assets/Bubbles-Brew-master-logo-transparent.png")
+          image = Image.open(source).convert("RGBA")
+          pixels = image.load(); width, height = image.size; threshold = 245
+          seen = bytearray(width * height); queue = deque()
+          def background(x, y):
+              r, g, b, a = pixels[x, y]
+              return a > 0 and r >= threshold and g >= threshold and b >= threshold
+          for x in range(width):
+              for y in (0, height - 1):
+                  if background(x, y) and not seen[y * width + x]: seen[y * width + x] = 1; queue.append((x, y))
+          for y in range(height):
+              for x in (0, width - 1):
+                  if background(x, y) and not seen[y * width + x]: seen[y * width + x] = 1; queue.append((x, y))
+          while queue:
+              x, y = queue.popleft()
+              for nx, ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
+                  if 0 <= nx < width and 0 <= ny < height:
+                      i = ny * width + nx
+                      if not seen[i] and background(nx, ny): seen[i] = 1; queue.append((nx, ny))
+          output = image.copy(); out = output.load()
+          for y in range(height):
+              for x in range(width):
+                  if seen[y * width + x]:
+                      r,g,b,a = out[x,y]; out[x,y] = (r,g,b,0)
+          output.save(target, "PNG", optimize=True)
+
+          # Keep the existing optimized Café/Beauty assets in the deployment.
+          for source_path, target_path in [
+              (Path("assets/cafe/Bubbles & Brew Café Lounge.png"), Path("assets/cafe/cafe-lounge-hero.webp")),
+              (Path("assets/Bubbles&Brew_Beauty_Parlour_Lounge.png"), Path("assets/beauty-parlour-hero.webp"))
+          ]:
+              if source_path.exists(): Image.open(source_path).convert("RGB").save(target_path, "WEBP", quality=82, method=6)
+
+          # Remove the retired Firebase SDK and bridge from the published artifact.
+          index = Path("index.html")
+          html = index.read_text(encoding="utf-8")
+          html = re.sub(r'<script src="https://www\.gstatic\.com/firebasejs/[^\"]+firebase-app-compat\.js"></script>\s*', '', html)
+          html = re.sub(r'<script src="https://www\.gstatic\.com/firebasejs/[^\"]+firebase-firestore-compat\.js"></script>\s*', '', html)
+          html = html.replace('<script src="/js/app.js"></script>', '<script src="/js/app-google.js"></script>')
+          html = html.replace('<script src="/js/expo-firestore-booking.js"></script>', '')
+          html = html.replace('Firebase project is connected, the same form will submit through a secure Cloud Function.', 'Google Workspace is connected, the same form will write directly to the Bubbles & Brew operations Google Sheet.')
+          html = html.replace('Once the Bubbles & Brew Firebase project is connected, the same form will submit through a secure Cloud Function.', 'Once Google Workspace is connected, the same form writes to the Bubbles & Brew operations Google Sheet.')
+          pattern = re.compile(r"document\.documentElement\.classList\.remove\('bb-loading'\);\s*document\.body\.classList\.remove\('bb-loading'\);", re.MULTILINE)
+          replacement = """(function () {
+            function revealHomepage() {
+              document.documentElement.classList.remove('bb-loading');
+              document.body.classList.remove('bb-loading');
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealHomepage, { once: true });
+            else revealHomepage();
+          })();"""
+          html, count = pattern.subn(replacement, html, count=1)
+          if count != 1: raise SystemExit('Homepage reveal guard not found.')
+          index.write_text(html, encoding="utf-8")
+
+          # Swap the public operations page to the Google Workspace version.
+          dashboard = Path("dashboard.html")
+          dhtml = dashboard.read_text(encoding="utf-8").replace('<script src="/js/dashboard.js"></script>', '<script src="/js/config.js"></script>\n<script src="/js/dashboard-google.js"></script>')
+          dhtml = dhtml.replace('secure Firebase staff dashboard is enabled', 'Google Workspace operations are enabled')
+          dashboard.write_text(dhtml, encoding="utf-8")
+          PY
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
