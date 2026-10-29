@@ -1,16 +1,15 @@
 // Public frontend configuration only.
 // Never put a Firebase Admin / service-account private key in this file.
-// Fill these values from Firebase Console → Project settings → Your apps → Web app.
 window.BB_CONFIG = {
   firebase: {
-    apiKey: '',
-    authDomain: '',
+    apiKey: 'AIzaSyD5rgtYhQo0XsliyVV6xcbzxgsN8LCiGR8',
+    authDomain: 'bubbles-and-brew.firebaseapp.com',
     projectId: 'bubbles-and-brew',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: ''
+    storageBucket: 'bubbles-and-brew.firebasestorage.app',
+    messagingSenderId: '927083687727',
+    appId: '1:927083687727:web:fb6e06a69678fd6f64bbda',
+    measurementId: 'G-EY2R7E739B'
   },
-  // Optional: Cloud Function base URL after deploy, e.g.
-  // https://us-central1-bubbles-and-brew.cloudfunctions.net
+  // Set after: firebase deploy --only functions:createPublicBooking
   functionsBaseUrl: ''
 };
