@@ -27,12 +27,14 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Prepare deployment artifact
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
           python -m pip install --quiet pillow
           python - <<'PY'
           from pathlib import Path
           from PIL import Image
-          import re
+          import re, os
           from collections import deque
 
           # Official logo optimization used by the existing site.
@@ -90,12 +92,18 @@ jobs:
           })();"""
           html, count = pattern.subn(replacement, html, count=1)
           if count != 1: raise SystemExit('Homepage reveal guard not found.')
+          # Force browsers/CDNs to fetch the current production JavaScript after every deploy.
+          version = os.environ.get('DEPLOY_SHA', 'dev')[:12]
+          html = html.replace('<script src="/js/config.js"></script>', f'<script src="/js/config.js?v={version}"></script>')
+          html = html.replace('<script src="/js/app-google.js"></script>', f'<script src="/js/app-google.js?v={version}"></script>')
           index.write_text(html, encoding="utf-8")
 
           # Swap the public operations page to the Google Workspace version.
           dashboard = Path("dashboard.html")
           dhtml = dashboard.read_text(encoding="utf-8").replace('<script src="/js/dashboard.js"></script>', '<script src="/js/config.js"></script>\n<script src="/js/dashboard-google.js"></script>')
           dhtml = dhtml.replace('secure Firebase staff dashboard is enabled', 'Google Workspace operations are enabled')
+          dhtml = dhtml.replace('<script src="/js/config.js"></script>', f'<script src="/js/config.js?v={version}"></script>')
+          dhtml = dhtml.replace('<script src="/js/dashboard-google.js"></script>', f'<script src="/js/dashboard-google.js?v={version}"></script>')
           dashboard.write_text(dhtml, encoding="utf-8")
           PY
 
