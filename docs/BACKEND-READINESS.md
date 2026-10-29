@@ -1,34 +1,47 @@
-# Bubbles & Brew backend readiness
+# Bubbles & Brew backend readiness (Firebase)
 
 ## Current state
 
-The repository now contains the backend contract and frontend integration layer, but **no live Supabase project is connected yet**.
+The repository now contains the Firebase contract and frontend integration layer. The Firebase project **bubbles-and-brew** is the intended backend.
 
-This is deliberate. Do not connect this project to SmartAttend, PASSAGE, Dream City Grocery, or any other existing Supabase project.
+Do not connect this site to any other Firebase or Supabase project.
 
 ## Included
 
-- PostgreSQL core schema in `supabase/migrations/0001_bubbles_and_brew_core.sql`
-- Secure public booking RPC in `0002_public_booking_rpc.sql`
-- Initial services, wash bays and membership catalogue in `0003_seed_catalogue.sql`
-- Browser-safe configuration placeholder in `js/config.js`
-- Frontend booking integration in `js/app.js`
-- RLS enabled across operational tables
-- Server-authoritative booking validation and pricing
-- Booking status history and audit-log foundations
+- Browser-safe Firebase config placeholder in `js/config.js`
+- Frontend booking + catalogue integration in `js/app.js` (Firebase JS SDK compat)
+- Firestore security rules in `firebase/firestore.rules`
+- Example Cloud Function `createPublicBooking` in `firebase/functions/`
+- Seed document shapes and collection notes in `firebase/SEED.md`
+- Firestore indexes note in `firebase/firestore.indexes.json`
 
 ## Connection procedure
 
-1. Create or identify the dedicated Bubbles & Brew Supabase project.
-2. Apply migrations 0001, 0002 and 0003 in order.
-3. Confirm the active services, wash bays and membership plans.
-4. Put only the Supabase project URL and publishable/anon key into `js/config.js`.
-5. Never put the service-role key in GitHub Pages or browser JavaScript.
-6. Test public booking creation, duplicate-slot protection, RLS and the operations workflow.
-7. Add staff authentication and role policies before exposing an operations dashboard.
+1. Open [Firebase Console](https://console.firebase.google.com/u/0/project/bubbles-and-brew).
+2. Enable **Authentication** (Email/Password and/or phone as needed for staff later).
+3. Create a **Web app** if one does not exist → copy the config object into `js/config.js` (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`).
+4. Enable **Cloud Firestore** (production mode is fine; we deploy rules next).
+5. Deploy rules and indexes:
+   ```bash
+   cd firebase
+   firebase use bubbles-and-brew
+   firebase deploy --only firestore:rules,firestore:indexes
+   ```
+6. Seed catalogue collections (`services`, `washBays`, `membershipPlans`) — see `firebase/SEED.md`.
+7. Deploy the Cloud Function:
+   ```bash
+   cd firebase/functions
+   npm install
+   firebase deploy --only functions:createPublicBooking
+   ```
+8. Put the function base URL into `js/config.js` as `functionsBaseUrl`  
+   (e.g. `https://us-central1-bubbles-and-brew.cloudfunctions.net`).
+9. Never put the service-account private key in GitHub Pages or browser JavaScript.
+10. Test public booking creation, duplicate-slot protection, and rules.
+11. Add staff authentication and role claims before exposing a live operations dashboard.
 
 ## Production principle
 
-The public website may submit a booking request, but the server decides whether the service exists, what price is quoted, whether the slot conflicts, and what booking number is issued.
+The public website may submit a booking request, but the **Cloud Function** decides whether the service exists, what price is quoted, whether the slot conflicts, and what booking number is issued.
 
 Payments, operational status changes, refunds, receipts and audit events must remain server-authoritative.
